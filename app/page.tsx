@@ -7,10 +7,10 @@ interface Participant { id: string; label: string; color: string }
 type Arrow = "solid" | "dashed";
 interface SeqMsg { from: string; to: string; text: string; arrow: Arrow; step: number; displayStep?: number }
 interface Diagram { participants: Participant[]; messages: SeqMsg[]; title?: string }
-interface Opts { coloredLines: boolean; coloredNumbers: boolean; coloredText: boolean; font: string; lifelineDash: string }
+interface Opts { coloredLines: boolean; coloredNumbers: boolean; coloredText: boolean; font: string; lifelineDash: string; theme: string }
 interface Layout { stepHeight: number; boxWidth: number; spacing: number; textSize: number; margin: number }
 
-const DEFAULT_OPTS: Opts = { coloredLines: true, coloredNumbers: true, coloredText: true, font: "Inter", lifelineDash: "circle" };
+const DEFAULT_OPTS: Opts = { coloredLines: true, coloredNumbers: true, coloredText: true, font: "Inter", lifelineDash: "long", theme: "light" };
 const DEFAULT_LAYOUT: Layout = { stepHeight: 42, boxWidth: 141, spacing: 250, textSize: 13, margin: 50 };
 
 // ── Palette ───────────────────────────────────────────────────────────────────
@@ -68,6 +68,12 @@ const LIFELINE_DASH: Record<string, { da: string; cap?: string; sw?: number }> =
     long:   { da: "14 6" },
 };
 
+const THEMES: Record<string, { bg: string; titleFill: string; boxStroke: string; boxStrokeW: string; labelFill: string; plainTextFill: string }> = {
+    light:   { bg: "#ffffff", titleFill: "#1e293b",  boxStroke: "#000000", boxStrokeW: "2",   labelFill: "white",   plainTextFill: "#1e293b" },
+    dark:    { bg: "#16161e", titleFill: "#c0caf5",  boxStroke: "none",    boxStrokeW: "0",   labelFill: "white",   plainTextFill: "#c0caf5" },
+    monokai: { bg: "#272822", titleFill: "#f8f8f2",  boxStroke: "none",    boxStrokeW: "0",   labelFill: "#272822", plainTextFill: "#f8f8f2" },
+};
+
 function buildSvg(d: Diagram, o: Opts, l: Layout): string {
     const { participants: ps, messages: ms } = d;
     if (!ps.length) return "";
@@ -88,20 +94,23 @@ function buildSvg(d: Diagram, o: Opts, l: Layout): string {
     const lt = TITLE_H + TP + BH, lb = H - BOT_PAD - BH;
     const msgY = (s: number) => TITLE_H + TP + BH + VP + (s - 1) * MG;
     const f = `'${o.font}', sans-serif`;
-    const ld = LIFELINE_DASH[o.lifelineDash] ?? LIFELINE_DASH.circle;
+    const ld = LIFELINE_DASH[o.lifelineDash] ?? LIFELINE_DASH.long;
     const lifelineSW = ld.sw ?? 1.5;
     const lifelineCapAttr = ld.cap ? ` stroke-linecap="${ld.cap}"` : "";
+    const th = THEMES[o.theme] ?? THEMES.light;
+    // circle-dot style for dashed (response) arrows
+    const DASHED_STYLE = ` stroke-dasharray="0 7" stroke-linecap="round" stroke-width="2.5"`;
     const parts: string[] = [];
-    parts.push(`<rect width="${W}" height="${H}" fill="white"/>`);
-    parts.push(`<text x="${W / 2}" y="${TITLE_H / 2 + 6}" text-anchor="middle" dominant-baseline="middle" font-family="${f}" font-size="15" font-weight="700" fill="#1e293b">${esc(diagramTitle)}</text>`);
+    parts.push(`<rect width="${W}" height="${H}" fill="${th.bg}"/>`);
+    parts.push(`<text x="${W / 2}" y="${TITLE_H / 2 + 6}" text-anchor="middle" dominant-baseline="middle" font-family="${f}" font-size="15" font-weight="700" fill="${th.titleFill}">${esc(diagramTitle)}</text>`);
     ps.forEach((p, i) => {
         const c = o.coloredLines ? p.color + "60" : "#d1d5db";
         parts.push(`<line x1="${cx(i)}" y1="${lt}" x2="${cx(i)}" y2="${lb}" stroke="${c}" stroke-width="${lifelineSW}" stroke-dasharray="${ld.da}"${lifelineCapAttr}/>`);
     });
     ps.forEach((p, i) => {
         const x = cx(i) - BW / 2, y = TITLE_H + TP;
-        parts.push(`<rect x="${x}" y="${y}" width="${BW}" height="${BH}" rx="${BR}" fill="${p.color}" stroke="#000000" stroke-width="2"/>`);
-        parts.push(`<text x="${cx(i)}" y="${y+BH/2+1}" text-anchor="middle" dominant-baseline="middle" font-family="${f}" font-size="${FS}" font-weight="700" fill="white">${esc(p.label)}</text>`);
+        parts.push(`<rect x="${x}" y="${y}" width="${BW}" height="${BH}" rx="${BR}" fill="${p.color}" stroke="${th.boxStroke}" stroke-width="${th.boxStrokeW}"/>`);
+        parts.push(`<text x="${cx(i)}" y="${y+BH/2+1}" text-anchor="middle" dominant-baseline="middle" font-family="${f}" font-size="${FS}" font-weight="700" fill="${th.labelFill}">${esc(p.label)}</text>`);
     });
     ms.forEach(msg => {
         const fi = idx.get(msg.from) ?? 0, ti = idx.get(msg.to) ?? 0;
@@ -109,51 +118,54 @@ function buildSvg(d: Diagram, o: Opts, l: Layout): string {
         const fx = cx(fi), tx = cx(ti);
         const fp = ps[fi];
         const lc = o.coloredLines ? fp.color : "#374151";
-        const tc = o.coloredText ? fp.color : "#1e293b";
+        const tc = o.coloredText ? fp.color : th.plainTextFill;
+        const pillTextFill = o.theme === "monokai" ? "#272822" : "#000000";
         if (fi === ti) {
-            const da = msg.arrow === "dashed" ? ` stroke-dasharray="12 5"` : "";
-            parts.push(`<path d="M${fx} ${y} H${fx+SW} V${y+SH} H${fx}" fill="none" stroke="${lc}" stroke-width="1.5"${da}/>`);
+            const isDashed = msg.arrow === "dashed";
+            const pathStyle = isDashed ? `fill="none" stroke="${lc}"${DASHED_STYLE}` : `fill="none" stroke="${lc}" stroke-width="1.5"`;
+            parts.push(`<path d="M${fx} ${y} H${fx+SW} V${y+SH} H${fx}" ${pathStyle}/>`);
             parts.push(`<polygon points="${fx},${y+SH} ${fx+AH},${y+SH-5} ${fx+AH},${y+SH+5}" fill="${lc}"/>`);
             if (o.coloredText) {
                 const pillH = FS + 8, pillW = Math.max(40, msg.text.length * (FS * 0.62) + 12);
                 const pillX = fx + SW + 5, pillY = y + SH / 2 - pillH / 2;
                 parts.push(`<rect x="${pillX}" y="${pillY}" width="${pillW}" height="${pillH}" rx="${pillH / 2}" fill="${fp.color}"/>`);
-                parts.push(`<text x="${pillX + pillW / 2}" y="${pillY + pillH / 2 + 1}" text-anchor="middle" dominant-baseline="middle" font-family="${f}" font-size="${FS}" font-weight="600" fill="#000000">${esc(msg.text)}</text>`);
+                parts.push(`<text x="${pillX + pillW / 2}" y="${pillY + pillH / 2 + 1}" text-anchor="middle" dominant-baseline="middle" font-family="${f}" font-size="${FS}" font-weight="600" fill="${pillTextFill}">${esc(msg.text)}</text>`);
             } else {
                 parts.push(`<text x="${fx+SW+5}" y="${y+SH/2+1}" dominant-baseline="middle" font-family="${f}" font-size="${FS}" fill="${tc}">${esc(msg.text)}</text>`);
             }
         } else {
             const dir = tx > fx ? 1 : -1;
-            const da = msg.arrow === "dashed" ? ` stroke-dasharray="12 5"` : "";
-            parts.push(`<line x1="${fx}" y1="${y}" x2="${tx-dir*AH}" y2="${y}" stroke="${lc}" stroke-width="1.5"${da}/>`);
-            if (msg.arrow === "solid") {
-                if (dir === 1) parts.push(`<polygon points="${tx},${y} ${tx-AH},${y-5} ${tx-AH},${y+5}" fill="${lc}"/>`);
-                else           parts.push(`<polygon points="${tx},${y} ${tx+AH},${y-5} ${tx+AH},${y+5}" fill="${lc}"/>`);
-            } else {
+            const isDashed = msg.arrow === "dashed";
+            if (isDashed) {
+                parts.push(`<line x1="${fx}" y1="${y}" x2="${tx-dir*AH}" y2="${y}" stroke="${lc}"${DASHED_STYLE}/>`);
                 if (dir === 1) parts.push(`<polyline points="${tx-AH},${y-5} ${tx},${y} ${tx-AH},${y+5}" fill="none" stroke="${lc}" stroke-width="1.5"/>`);
                 else           parts.push(`<polyline points="${tx+AH},${y-5} ${tx},${y} ${tx+AH},${y+5}" fill="none" stroke="${lc}" stroke-width="1.5"/>`);
+            } else {
+                parts.push(`<line x1="${fx}" y1="${y}" x2="${tx-dir*AH}" y2="${y}" stroke="${lc}" stroke-width="1.5"/>`);
+                if (dir === 1) parts.push(`<polygon points="${tx},${y} ${tx-AH},${y-5} ${tx-AH},${y+5}" fill="${lc}"/>`);
+                else           parts.push(`<polygon points="${tx},${y} ${tx+AH},${y-5} ${tx+AH},${y+5}" fill="${lc}"/>`);
             }
             const mid = (fx + tx) / 2;
             if (o.coloredText) {
                 const pillH = FS + 8, pillW = Math.max(40, msg.text.length * (FS * 0.62) + 12);
                 const pillY = y - pillH - 10;
                 parts.push(`<rect x="${mid - pillW / 2}" y="${pillY}" width="${pillW}" height="${pillH}" rx="${pillH / 2}" fill="${fp.color}"/>`);
-                parts.push(`<text x="${mid}" y="${pillY + pillH / 2 + 1}" text-anchor="middle" dominant-baseline="middle" font-family="${f}" font-size="${FS}" font-weight="600" fill="#000000">${esc(msg.text)}</text>`);
+                parts.push(`<text x="${mid}" y="${pillY + pillH / 2 + 1}" text-anchor="middle" dominant-baseline="middle" font-family="${f}" font-size="${FS}" font-weight="600" fill="${pillTextFill}">${esc(msg.text)}</text>`);
             } else {
                 parts.push(`<text x="${mid}" y="${y-8}" text-anchor="middle" font-family="${f}" font-size="${FS}" fill="${tc}">${esc(msg.text)}</text>`);
             }
         }
         if (o.coloredNumbers) {
             parts.push(`<circle cx="${fx}" cy="${y}" r="10" fill="${fp.color}"/>`);
-            parts.push(`<text x="${fx}" y="${y+1}" text-anchor="middle" dominant-baseline="middle" font-family="${f}" font-size="11" font-weight="700" fill="#000000">${msg.displayStep ?? msg.step}</text>`);
+            parts.push(`<text x="${fx}" y="${y+1}" text-anchor="middle" dominant-baseline="middle" font-family="${f}" font-size="11" font-weight="700" fill="${pillTextFill}">${msg.displayStep ?? msg.step}</text>`);
         } else {
-            parts.push(`<text x="${fx}" y="${y+1}" text-anchor="middle" dominant-baseline="middle" font-family="${f}" font-size="13" font-weight="700" fill="#000000">${msg.displayStep ?? msg.step}</text>`);
+            parts.push(`<text x="${fx}" y="${y+1}" text-anchor="middle" dominant-baseline="middle" font-family="${f}" font-size="13" font-weight="700" fill="${th.plainTextFill}">${msg.displayStep ?? msg.step}</text>`);
         }
     });
     ps.forEach((p, i) => {
         const x = cx(i) - BW / 2, y = H - BOT_PAD - BH;
-        parts.push(`<rect x="${x}" y="${y}" width="${BW}" height="${BH}" rx="${BR}" fill="${p.color}" stroke="#000000" stroke-width="2"/>`);
-        parts.push(`<text x="${cx(i)}" y="${y+BH/2+1}" text-anchor="middle" dominant-baseline="middle" font-family="${f}" font-size="${FS}" font-weight="700" fill="white">${esc(p.label)}</text>`);
+        parts.push(`<rect x="${x}" y="${y}" width="${BW}" height="${BH}" rx="${BR}" fill="${p.color}" stroke="${th.boxStroke}" stroke-width="${th.boxStrokeW}"/>`);
+        parts.push(`<text x="${cx(i)}" y="${y+BH/2+1}" text-anchor="middle" dominant-baseline="middle" font-family="${f}" font-size="${FS}" font-weight="700" fill="${th.labelFill}">${esc(p.label)}</text>`);
     });
     return `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}">${parts.join("")}</svg>`;
 }
@@ -233,6 +245,28 @@ function SettingsContent({
 }) {
     return (
         <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+
+            {/* Theme */}
+            <div>
+                <div style={{ fontSize: 10, fontWeight: 700, color: "#444", textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 10 }}>Theme</div>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 6 }}>
+                    {(["light","dark","monokai"] as const).map(t => (
+                        <button key={t} onClick={() => upd({ theme: t })}
+                            style={{
+                                padding: "8px 4px", borderRadius: 10, fontSize: 11, fontWeight: 700,
+                                textTransform: "capitalize", letterSpacing: "0.02em",
+                                border: opts.theme === t ? "2px solid #0a84ff" : "2px solid transparent",
+                                background: t === "light" ? "#f1f5f9" : t === "dark" ? "#16161e" : "#272822",
+                                color: t === "light" ? "#1e293b" : t === "dark" ? "#c0caf5" : "#f8f8f2",
+                                cursor: "pointer", transition: "border 0.15s",
+                            }}
+                        >{t}</button>
+                    ))}
+                </div>
+            </div>
+
+            <div style={{ height: 1, background: "#222" }} />
+
             <div>
                 <div style={{ fontSize: 10, fontWeight: 700, color: "#444", textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 12 }}>Style</div>
                 <div style={{ display: "flex", flexDirection: "column", gap: 11 }}>
