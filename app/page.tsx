@@ -86,6 +86,34 @@ function renderIcon(key: string, icx: number, icy: number, size: number): string
     return `<g transform="translate(${tx},${ty}) scale(${s.toFixed(4)})" fill="none" stroke="white" stroke-width="${sw}" stroke-linecap="round" stroke-linejoin="round">${elems}</g>`;
 }
 
+// ── Diagram type detection ────────────────────────────────────────────────────
+const MERMAID_TYPES: Record<string, string> = {
+    sequencediagram: "sequence",
+    graph:           "flowchart",
+    flowchart:       "flowchart",
+    classdiagram:    "class",
+    erdiagram:       "er",
+    statediagram:    "state",
+    "statediagram-v2": "state",
+    gantt:           "gantt",
+    pie:             "pie",
+    journey:         "journey",
+    gitgraph:        "git",
+    "gitgraph:":     "git",
+    mindmap:         "mindmap",
+    timeline:        "timeline",
+    quadrantchart:   "quadrant",
+    xychart:         "xychart",
+    "xychart-beta":  "xychart",
+    requirementdiagram: "requirement",
+    "c4context":     "c4",
+};
+
+function detectDiagramType(code: string): string {
+    const first = code.trim().split("\n")[0].trim().toLowerCase().replace(/\s+.*$/, "");
+    return MERMAID_TYPES[first] ?? "sequence";
+}
+
 // ── Parser ────────────────────────────────────────────────────────────────────
 const DEFAULT_DIAGRAM_TITLE = "Sequence Diagram";
 
@@ -319,10 +347,10 @@ function IconBtn({ active, onClick, children }: { active: boolean; onClick: () =
 
 // ── Settings content (shared between desktop panel + mobile sheet) ─────────────
 function SettingsContent({
-    opts, layout, copied, mobile = false, participants = [],
+    opts, layout, copied, mobile = false, participants = [], isSequence = true,
     upd, updL, exportPng, exportCode, exportJson, copyCode,
 }: {
-    opts: Opts; layout: Layout; copied: boolean; mobile?: boolean; participants?: Participant[];
+    opts: Opts; layout: Layout; copied: boolean; mobile?: boolean; participants?: Participant[]; isSequence?: boolean;
     upd: (p: Partial<Opts>) => void;
     updL: (p: Partial<Layout>) => void;
     exportPng: () => void; exportCode: () => void; exportJson: () => void; copyCode: () => void;
@@ -350,80 +378,86 @@ function SettingsContent({
                 </div>
             </div>
 
-            <div style={{ height: 1, background: "#222" }} />
-
-            <div>
-                <div style={{ fontSize: fs(10), fontWeight: 700, color: "#444", textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 12 }}>Style</div>
-                <div style={{ display: "flex", flexDirection: "column", gap: mobile ? 14 : 11 }}>
-                    {([ ["coloredLines","Lines"], ["coloredNumbers","Numbers"], ["coloredText","Text Pill"], ["showIcons","Icons"], ["showBigNumbers","Big Numbers"] ] as const).map(([k, label]) => (
-                        <div key={k} className="flex items-center justify-between cursor-pointer select-none"
-                            onClick={() => upd({ [k]: !opts[k] } as Partial<Opts>)}>
-                            <span style={{ fontSize: fs(13), color: "#bbb", fontWeight: 400 }}>{label}</span>
-                            <div style={{
-                                position: "relative", width: 42, height: 24, borderRadius: 12, flexShrink: 0,
-                                background: opts[k] ? "#34c759" : "#333",
-                                transition: "background 0.2s", cursor: "pointer",
-                            }}>
-                                <div style={{
-                                    position: "absolute", top: 2, width: 20, height: 20, borderRadius: 10,
-                                    background: "white", left: opts[k] ? 20 : 2,
-                                    transition: "left 0.2s ease",
-                                    boxShadow: "0 1px 4px rgba(0,0,0,0.4)",
-                                }} />
-                            </div>
-                        </div>
-                    ))}
-                </div>
-            </div>
-
-            {/* Icons editor — only when showIcons is on */}
-            {opts.showIcons && participants.length > 0 && (
+            {isSequence && (
                 <>
                     <div style={{ height: 1, background: "#222" }} />
+
                     <div>
-                        <div style={{ fontSize: fs(10), fontWeight: 700, color: "#444", textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 12 }}>Icons</div>
-                        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                            {participants.map(p => {
-                                const currentKey = ICON_NODES[opts.icons[p.id]] ? opts.icons[p.id] : guessIconKey(p.label);
-                                return (
-                                    <div key={p.id} style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                                        <div style={{ width: 8, height: 8, borderRadius: 4, background: p.color, flexShrink: 0 }} />
-                                        <span style={{ fontSize: fs(12), color: "#bbb", flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{p.label}</span>
-                                        <select
-                                            value={currentKey}
-                                            onChange={e => upd({ icons: { ...opts.icons, [p.id]: e.target.value } })}
-                                            style={{
-                                                background: "#2a2a2c", border: "1px solid #444",
-                                                borderRadius: 8, color: "white",
-                                                fontSize: fs(11), padding: "4px 6px",
-                                                outline: "none", cursor: "pointer", flexShrink: 0,
-                                            }}
-                                        >
-                                            {ICON_KEYS.map(k => <option key={k} value={k}>{k}</option>)}
-                                        </select>
+                        <div style={{ fontSize: fs(10), fontWeight: 700, color: "#444", textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 12 }}>Style</div>
+                        <div style={{ display: "flex", flexDirection: "column", gap: mobile ? 14 : 11 }}>
+                            {([ ["coloredLines","Lines"], ["coloredNumbers","Numbers"], ["coloredText","Text Pill"], ["showIcons","Icons"], ["showBigNumbers","Big Numbers"] ] as const).map(([k, label]) => (
+                                <div key={k} className="flex items-center justify-between cursor-pointer select-none"
+                                    onClick={() => upd({ [k]: !opts[k] } as Partial<Opts>)}>
+                                    <span style={{ fontSize: fs(13), color: "#bbb", fontWeight: 400 }}>{label}</span>
+                                    <div style={{
+                                        position: "relative", width: 42, height: 24, borderRadius: 12, flexShrink: 0,
+                                        background: opts[k] ? "#34c759" : "#333",
+                                        transition: "background 0.2s", cursor: "pointer",
+                                    }}>
+                                        <div style={{
+                                            position: "absolute", top: 2, width: 20, height: 20, borderRadius: 10,
+                                            background: "white", left: opts[k] ? 20 : 2,
+                                            transition: "left 0.2s ease",
+                                            boxShadow: "0 1px 4px rgba(0,0,0,0.4)",
+                                        }} />
                                     </div>
-                                );
-                            })}
+                                </div>
+                            ))}
                         </div>
                     </div>
+
+                    {/* Icons editor — only when showIcons is on */}
+                    {opts.showIcons && participants.length > 0 && (
+                        <>
+                            <div style={{ height: 1, background: "#222" }} />
+                            <div>
+                                <div style={{ fontSize: fs(10), fontWeight: 700, color: "#444", textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 12 }}>Icons</div>
+                                <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                                    {participants.map(p => {
+                                        const currentKey = ICON_NODES[opts.icons[p.id]] ? opts.icons[p.id] : guessIconKey(p.label);
+                                        return (
+                                            <div key={p.id} style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                                                <div style={{ width: 8, height: 8, borderRadius: 4, background: p.color, flexShrink: 0 }} />
+                                                <span style={{ fontSize: fs(12), color: "#bbb", flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{p.label}</span>
+                                                <select
+                                                    value={currentKey}
+                                                    onChange={e => upd({ icons: { ...opts.icons, [p.id]: e.target.value } })}
+                                                    style={{
+                                                        background: "#2a2a2c", border: "1px solid #444",
+                                                        borderRadius: 8, color: "white",
+                                                        fontSize: fs(11), padding: "4px 6px",
+                                                        outline: "none", cursor: "pointer", flexShrink: 0,
+                                                    }}
+                                                >
+                                                    {ICON_KEYS.map(k => <option key={k} value={k}>{k}</option>)}
+                                                </select>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+                        </>
+                    )}
+
+                    <div style={{ height: 1, background: "#222" }} />
+
+                    <div>
+                        <div style={{ fontSize: fs(10), fontWeight: 700, color: "#444", textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 14 }}>Layout</div>
+                        <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                            <SliderRow label="Height" value={layout.stepHeight} min={30} max={80} fontSize={fs(12)} onChange={v => updL({ stepHeight: v })} />
+                            <SliderRow label="Width" value={layout.boxWidth} min={80} max={180} fontSize={fs(12)} onChange={v => updL({ boxWidth: v })} />
+                            <SliderRow label="Gap" value={layout.spacing} min={120} max={450} fontSize={fs(12)} onChange={v => updL({ spacing: v })} />
+                            <SliderRow label="V.Gap" value={layout.vPad ?? 44} min={20} max={120} fontSize={fs(12)} onChange={v => updL({ vPad: v })} />
+                            <SliderRow label="Font" value={layout.textSize} min={10} max={20} unit="px" fontSize={fs(12)} onChange={v => updL({ textSize: v })} />
+                            <SliderRow label="Margin" value={layout.margin} min={120} max={200} fontSize={fs(12)} onChange={v => updL({ margin: v })} />
+                        </div>
+                    </div>
+
+                    <div style={{ height: 1, background: "#222" }} />
                 </>
             )}
 
-            <div style={{ height: 1, background: "#222" }} />
-
-            <div>
-                <div style={{ fontSize: fs(10), fontWeight: 700, color: "#444", textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 14 }}>Layout</div>
-                <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-                    <SliderRow label="Height" value={layout.stepHeight} min={30} max={80} fontSize={fs(12)} onChange={v => updL({ stepHeight: v })} />
-                    <SliderRow label="Width" value={layout.boxWidth} min={80} max={180} fontSize={fs(12)} onChange={v => updL({ boxWidth: v })} />
-                    <SliderRow label="Gap" value={layout.spacing} min={120} max={450} fontSize={fs(12)} onChange={v => updL({ spacing: v })} />
-                    <SliderRow label="V.Gap" value={layout.vPad ?? 44} min={20} max={120} fontSize={fs(12)} onChange={v => updL({ vPad: v })} />
-                    <SliderRow label="Font" value={layout.textSize} min={10} max={20} unit="px" fontSize={fs(12)} onChange={v => updL({ textSize: v })} />
-                    <SliderRow label="Margin" value={layout.margin} min={120} max={200} fontSize={fs(12)} onChange={v => updL({ margin: v })} />
-                </div>
-            </div>
-
-            <div style={{ height: 1, background: "#222" }} />
+            {!isSequence && <div style={{ height: 1, background: "#222" }} />}
 
             <div>
                 <div style={{ fontSize: fs(10), fontWeight: 700, color: "#444", textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 9 }}>Export</div>
@@ -469,6 +503,10 @@ export default function SequenceTool() {
     const [opts, setOpts] = useState<Opts>(DEFAULT_OPTS);
     const [layout, setLayout] = useState<Layout>(DEFAULT_LAYOUT);
     const [zoom, setZoom] = useState(1.0);
+    const [mermaidSvg, setMermaidSvg] = useState<string>("");
+
+    const diagramType = useMemo(() => detectDiagramType(code), [code]);
+    const isSequence = diagramType === "sequence";
 
     const [panX, setPanX] = useState(0);
     const [panY, setPanY] = useState(0);
@@ -653,13 +691,34 @@ export default function SequenceTool() {
     useEffect(() => { if (mounted) localStorage.setItem("nsd-opts", JSON.stringify(opts)); }, [opts, mounted]);
     useEffect(() => { if (mounted) localStorage.setItem("nsd-layout", JSON.stringify(layout)); }, [layout, mounted]);
 
+    // ── Mermaid rendering for non-sequence diagrams ───────────────────────
+    useEffect(() => {
+        if (!mounted || isSequence) { setMermaidSvg(""); return; }
+        let cancelled = false;
+        const mermaidTheme = opts.theme === "dark" || opts.theme === "monokai" ? "dark" : "default";
+        import("mermaid").then(({ default: mermaid }) => {
+            mermaid.initialize({ startOnLoad: false, theme: mermaidTheme as "dark" | "default", securityLevel: "loose" });
+            mermaid.render("mermaid-svg-" + Date.now(), code).then(({ svg: renderedSvg }) => {
+                if (!cancelled) setMermaidSvg(renderedSvg);
+            }).catch(() => {
+                if (!cancelled) setMermaidSvg("");
+            });
+        });
+        return () => { cancelled = true; };
+    }, [code, opts.theme, mounted, isSequence]);
+
     const diagram = useMemo(() => parse(code), [code]);
     const svg = useMemo(() => buildSvg(diagram, opts, layout), [diagram, opts, layout]);
 
+    const activeSvg = isSequence ? svg : mermaidSvg;
+
     const svgDims = useMemo(() => {
-        const m = svg.match(/width="(\d+)" height="(\d+)"/);
-        return m ? { w: parseInt(m[1]), h: parseInt(m[2]) } : null;
-    }, [svg]);
+        const m = activeSvg.match(/width="(\d+(?:\.\d+)?)" height="(\d+(?:\.\d+)?)"/);
+        if (m) return { w: parseFloat(m[1]), h: parseFloat(m[2]) };
+        // mermaid sometimes uses viewBox only
+        const vb = activeSvg.match(/viewBox="[^"]*0 0 (\d+(?:\.\d+)?) (\d+(?:\.\d+)?)"/);
+        return vb ? { w: parseFloat(vb[1]), h: parseFloat(vb[2]) } : null;
+    }, [activeSvg]);
 
     const fitZoom = useCallback(() => {
         if (!canvasRef.current || !svgDims) return;
@@ -715,7 +774,7 @@ export default function SequenceTool() {
     const EXPORT_LAYOUT: Layout = { stepHeight: 58, boxWidth: 160, spacing: 210, textSize: 14, margin: 60, vPad: 44 };
 
     const exportPng = useCallback(() => {
-        const exportSvg = buildSvg(diagram, opts, EXPORT_LAYOUT);
+        const exportSvg = isSequence ? buildSvg(diagram, opts, EXPORT_LAYOUT) : mermaidSvg;
         if (!exportSvg) return;
         const url = URL.createObjectURL(new Blob([exportSvg], { type: "image/svg+xml" }));
         const img = new Image();
@@ -725,11 +784,11 @@ export default function SequenceTool() {
             const ctx = c.getContext("2d")!;
             ctx.scale(2, 2); ctx.fillStyle = "#fff"; ctx.fillRect(0, 0, img.width, img.height);
             ctx.drawImage(img, 0, 0);
-            c.toBlob(b => { if (!b) return; const a = document.createElement("a"); a.href = URL.createObjectURL(b); a.download = "sequence.png"; a.click(); });
+            c.toBlob(b => { if (!b) return; const a = document.createElement("a"); a.href = URL.createObjectURL(b); a.download = "diagram.png"; a.click(); });
             URL.revokeObjectURL(url);
         };
         img.src = url;
-    }, [diagram, opts]);
+    }, [diagram, opts, isSequence, mermaidSvg]);
 
     const exportCode = useCallback(() => {
         const a = document.createElement("a");
@@ -738,10 +797,11 @@ export default function SequenceTool() {
     }, [code]);
 
     const exportJson = useCallback(() => {
+        const data = isSequence ? diagram : { type: diagramType, code };
         const a = document.createElement("a");
-        a.href = URL.createObjectURL(new Blob([JSON.stringify(diagram, null, 2)], { type: "application/json" }));
+        a.href = URL.createObjectURL(new Blob([JSON.stringify(data, null, 2)], { type: "application/json" }));
         a.download = "diagram.json"; a.click();
-    }, [diagram]);
+    }, [diagram, isSequence, diagramType, code]);
 
     const copyCode = useCallback(() => {
         navigator.clipboard.writeText(code).then(() => {
@@ -786,6 +846,13 @@ export default function SequenceTool() {
                 <span className="font-bold text-[16px] tracking-tight" style={{ color: "#f4f4f5", letterSpacing: "-0.3px" }}>
                     Mermaid++
                 </span>
+                {diagramType !== "sequence" && (
+                    <span style={{ marginLeft: 8, fontSize: 10, fontWeight: 700, background: "#0a84ff22",
+                        color: "#0a84ff", borderRadius: 6, padding: "2px 7px", textTransform: "uppercase",
+                        letterSpacing: "0.08em" }}>
+                        {diagramType}
+                    </span>
+                )}
                 <div className="flex-1" />
                 <div className="flex gap-2">
                     <IconBtn active={showCode} onClick={() => { setShowCode(v => !v); if (showSettings) setShowSettings(false); }}>
@@ -889,7 +956,7 @@ export default function SequenceTool() {
                             setZoom(newZoom); setPanX(newPanX); setPanY(newPanY); setFitActive(false);
                         }}
                     >
-                        {mounted && svg ? (
+                        {mounted && activeSvg ? (
                             <div
                                 style={{
                                     position: "absolute",
@@ -898,8 +965,12 @@ export default function SequenceTool() {
                                     transformOrigin: "center center",
                                     willChange: "transform",
                                 }}
-                                dangerouslySetInnerHTML={{ __html: svg }}
+                                dangerouslySetInnerHTML={{ __html: activeSvg }}
                             />
+                        ) : mounted && !activeSvg && !isSequence ? (
+                            <div style={{ color: "#888", position: "absolute", top: "50%", left: "50%", transform: "translate(-50%,-50%)" }}>
+                                Rendering…
+                            </div>
                         ) : (
                             <div className="flex items-center justify-center h-full">
                                 {mounted && (
@@ -1035,7 +1106,7 @@ export default function SequenceTool() {
                             </button>
                         </div>
                         <div className="flex-1 overflow-y-auto" style={{ padding: "20px 16px" }}>
-                            <SettingsContent opts={opts} layout={layout} copied={copied} participants={diagram.participants}
+                            <SettingsContent opts={opts} layout={layout} copied={copied} participants={diagram.participants} isSequence={isSequence}
                                 upd={upd} updL={updL} exportPng={exportPng} exportCode={exportCode} exportJson={exportJson} copyCode={copyCode} />
                         </div>
                     </div>
@@ -1122,7 +1193,7 @@ export default function SequenceTool() {
                         </div>
                         {/* Sheet content */}
                         <div className="flex-1 overflow-y-auto" style={{ padding: "20px 20px 40px" }}>
-                            <SettingsContent opts={opts} layout={layout} copied={copied} mobile={true} participants={diagram.participants}
+                            <SettingsContent opts={opts} layout={layout} copied={copied} mobile={true} participants={diagram.participants} isSequence={isSequence}
                                 upd={upd} updL={updL} exportPng={exportPng} exportCode={exportCode} exportJson={exportJson} copyCode={copyCode} />
                         </div>
                     </div>
