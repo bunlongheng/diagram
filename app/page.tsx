@@ -85,7 +85,7 @@ function buildSvg(d: Diagram, o: Opts, l: Layout): string {
     const diagramTitle = d.title ?? DEFAULT_DIAGRAM_TITLE;
     const TOP_PAD = l.margin;
     const BOT_PAD = l.margin;
-    const TITLE_H = 38;
+    const TITLE_H = 50;
     const TP = 50;
     const cx = (i: number) => LP + BW / 2 + i * HS;
     const idx = new Map(ps.map((p, i) => [p.id, i]));
@@ -103,7 +103,7 @@ function buildSvg(d: Diagram, o: Opts, l: Layout): string {
     const DASHED_STYLE = ` stroke-dasharray="0 7" stroke-linecap="round" stroke-width="2.5"`;
     const parts: string[] = [];
     parts.push(`<rect width="${W}" height="${H}" fill="${th.bg}"/>`);
-    parts.push(`<text x="${W / 2}" y="${TOP_PAD + TITLE_H / 2 + 1}" text-anchor="middle" dominant-baseline="middle" font-family="${f}" font-size="15" font-weight="700" fill="${th.titleFill}">${esc(diagramTitle)}</text>`);
+    parts.push(`<text x="${W / 2}" y="${TOP_PAD + TITLE_H / 2 + 1}" text-anchor="middle" dominant-baseline="middle" font-family="${f}" font-size="24" font-weight="800" fill="${th.titleFill}">${esc(diagramTitle)}</text>`);
     ps.forEach((p, i) => {
         const c = o.coloredLines ? p.color + "60" : "#d1d5db";
         parts.push(`<line x1="${cx(i)}" y1="${lt}" x2="${cx(i)}" y2="${lb}" stroke="${c}" stroke-width="${lifelineSW}" stroke-dasharray="${ld.da}"${lifelineCapAttr}/>`);
