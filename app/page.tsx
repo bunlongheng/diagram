@@ -606,27 +606,6 @@ export default function SequenceTool() {
         return () => window.removeEventListener("resize", check);
     }, []);
 
-    // ── Keyboard shortcuts (Figma-like) ───────────────────────────────────
-    useEffect(() => {
-        if (!mounted) return;
-        const onKeyDown = (e: KeyboardEvent) => {
-            const tag = (e.target as HTMLElement).tagName;
-            if (tag === "TEXTAREA" || tag === "INPUT") return;
-            const mod = e.metaKey || e.ctrlKey;
-            if (mod && e.key === "0") { e.preventDefault(); fitZoom(); }
-            if (mod && (e.key === "=" || e.key === "+")) { e.preventDefault(); setZoom(z => parseFloat(Math.min(3, z + 0.15).toFixed(2))); setFitActive(false); }
-            if (mod && e.key === "-") { e.preventDefault(); setZoom(z => parseFloat(Math.max(0.1, z - 0.15).toFixed(2))); setFitActive(false); }
-            if (e.key === "f" || e.key === "F") fitZoom();
-            if (e.key === " " && !e.repeat) { e.preventDefault(); spaceHeld.current = true; }
-        };
-        const onKeyUp = (e: KeyboardEvent) => {
-            if (e.key === " ") spaceHeld.current = false;
-        };
-        window.addEventListener("keydown", onKeyDown);
-        window.addEventListener("keyup", onKeyUp);
-        return () => { window.removeEventListener("keydown", onKeyDown); window.removeEventListener("keyup", onKeyUp); };
-    }, [mounted, fitZoom]); // eslint-disable-line react-hooks/exhaustive-deps
-
     // ── Persist ───────────────────────────────────────────────────────────
     useEffect(() => { if (mounted) localStorage.setItem("nsd-code", code); }, [code, mounted]);
     useEffect(() => { if (mounted) localStorage.setItem("nsd-opts", JSON.stringify(opts)); }, [opts, mounted]);
@@ -639,7 +618,6 @@ export default function SequenceTool() {
         const m = svg.match(/width="(\d+)" height="(\d+)"/);
         return m ? { w: parseInt(m[1]), h: parseInt(m[2]) } : null;
     }, [svg]);
-
 
     const fitZoom = useCallback(() => {
         if (!canvasRef.current || !svgDims) return;
@@ -666,6 +644,27 @@ export default function SequenceTool() {
         const id = requestAnimationFrame(() => fitZoom());
         return () => cancelAnimationFrame(id);
     }, [showSettings, showCode]); // eslint-disable-line react-hooks/exhaustive-deps
+
+    // ── Keyboard shortcuts (Figma-like) ───────────────────────────────────
+    useEffect(() => {
+        if (!mounted) return;
+        const onKeyDown = (e: KeyboardEvent) => {
+            const tag = (e.target as HTMLElement).tagName;
+            if (tag === "TEXTAREA" || tag === "INPUT") return;
+            const mod = e.metaKey || e.ctrlKey;
+            if (mod && e.key === "0") { e.preventDefault(); fitZoom(); }
+            if (mod && (e.key === "=" || e.key === "+")) { e.preventDefault(); setZoom(z => parseFloat(Math.min(3, z + 0.15).toFixed(2))); setFitActive(false); }
+            if (mod && e.key === "-") { e.preventDefault(); setZoom(z => parseFloat(Math.max(0.1, z - 0.15).toFixed(2))); setFitActive(false); }
+            if (e.key === "f" || e.key === "F") fitZoom();
+            if (e.key === " " && !e.repeat) { e.preventDefault(); spaceHeld.current = true; }
+        };
+        const onKeyUp = (e: KeyboardEvent) => {
+            if (e.key === " ") spaceHeld.current = false;
+        };
+        window.addEventListener("keydown", onKeyDown);
+        window.addEventListener("keyup", onKeyUp);
+        return () => { window.removeEventListener("keydown", onKeyDown); window.removeEventListener("keyup", onKeyUp); };
+    }, [mounted, fitZoom]); // eslint-disable-line react-hooks/exhaustive-deps
 
     const upd = (p: Partial<Opts>) => setOpts(o => ({ ...o, ...p }));
     const updL = (p: Partial<Layout>) => setLayout(l => ({ ...l, ...p }));
