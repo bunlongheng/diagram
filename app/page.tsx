@@ -428,17 +428,25 @@ export default function SequenceTool() {
     const [layout, setLayout] = useState<Layout>(DEFAULT_LAYOUT);
     const [zoom, setZoom] = useState(1.0);
 
+    const [panX, setPanX] = useState(0);
+    const [panY, setPanY] = useState(0);
+    const [isPanning, setIsPanning] = useState(false);
+    const [showShortcuts, setShowShortcuts] = useState(false);
+
     const canvasRef = useRef<HTMLDivElement>(null);
     const isResizing = useRef(false);
     const resizeStartX = useRef(0);
     const resizeStartW = useRef(340);
     const isDragging = useRef(false);
-    const dragOrigin = useRef({ x: 0, y: 0, sl: 0, st: 0 });
-    const [draggingCanvas, setDraggingCanvas] = useState(false);
+    const dragStartMouse = useRef({ x: 0, y: 0 });
+    const dragStartPan = useRef({ x: 0, y: 0 });
     const zoomRef = useRef(1.0);
+    const panRef = useRef({ x: 0, y: 0 });
+    const spaceHeld = useRef(false);
 
-    // Keep zoomRef in sync
+    // Keep refs in sync for use in event handlers
     useEffect(() => { zoomRef.current = zoom; }, [zoom]);
+    useEffect(() => { panRef.current = { x: panX, y: panY }; }, [panX, panY]);
 
     // ── Resize drag (desktop) ───────────────────────────────────────────────
     useEffect(() => {
@@ -453,17 +461,38 @@ export default function SequenceTool() {
         return () => { window.removeEventListener("mousemove", onMove); window.removeEventListener("mouseup", onUp); };
     }, []);
 
-    // ── Smooth pinch-to-zoom (trackpad ctrl+wheel) ────────────────────────
+    // ── Wheel: pan (no modifier) + zoom-to-cursor (ctrl/cmd) ─────────────
     useEffect(() => {
         if (!mounted) return;
         const el = canvasRef.current;
         if (!el) return;
         const onWheel = (e: WheelEvent) => {
-            if (!e.ctrlKey && !e.metaKey) return;
             e.preventDefault();
-            const speed = e.deltaMode === 1 ? 0.06 : 0.004;
-            setZoom(z => parseFloat(Math.min(3, Math.max(0.2, z - e.deltaY * speed)).toFixed(3)));
-            setFitActive(false);
+            if (e.ctrlKey || e.metaKey) {
+                // Zoom toward cursor
+                const rect = el.getBoundingClientRect();
+                const dx = e.clientX - (rect.left + rect.width / 2);
+                const dy = e.clientY - (rect.top + rect.height / 2);
+                const speed = e.deltaMode === 1 ? 0.06 : 0.004;
+                const oldZoom = zoomRef.current;
+                const newZoom = parseFloat(Math.min(3, Math.max(0.1, oldZoom - e.deltaY * speed)).toFixed(3));
+                const ratio = newZoom / oldZoom;
+                const newPanX = dx * (1 - ratio) + panRef.current.x * ratio;
+                const newPanY = dy * (1 - ratio) + panRef.current.y * ratio;
+                zoomRef.current = newZoom;
+                panRef.current = { x: newPanX, y: newPanY };
+                setZoom(newZoom);
+                setPanX(newPanX);
+                setPanY(newPanY);
+                setFitActive(false);
+            } else {
+                // Pan (two-finger scroll, no modifier)
+                const newPanX = panRef.current.x - e.deltaX;
+                const newPanY = panRef.current.y - e.deltaY;
+                panRef.current = { x: newPanX, y: newPanY };
+                setPanX(newPanX);
+                setPanY(newPanY);
+            }
         };
         el.addEventListener("wheel", onWheel, { passive: false });
         return () => el.removeEventListener("wheel", onWheel);
@@ -475,10 +504,11 @@ export default function SequenceTool() {
         const el = canvasRef.current;
         if (!el) return;
 
-        let startScrollLeft = 0, startScrollTop = 0;
         let startTouchX = 0, startTouchY = 0;
+        let startPanX = 0, startPanY = 0;
         let startPinchDist: number | null = null;
         let startZoomVal = 1;
+        let startPinchPanX = 0, startPinchPanY = 0;
         let isTouchPanning = false;
 
         const getDist = (t: TouchList) => {
@@ -491,14 +521,16 @@ export default function SequenceTool() {
             if (e.touches.length === 2) {
                 startPinchDist = getDist(e.touches);
                 startZoomVal = zoomRef.current;
+                startPinchPanX = panRef.current.x;
+                startPinchPanY = panRef.current.y;
                 isTouchPanning = false;
             } else if (e.touches.length === 1) {
                 isTouchPanning = true;
                 startPinchDist = null;
                 startTouchX = e.touches[0].clientX;
                 startTouchY = e.touches[0].clientY;
-                startScrollLeft = el.scrollLeft;
-                startScrollTop = el.scrollTop;
+                startPanX = panRef.current.x;
+                startPanY = panRef.current.y;
             }
         };
 
@@ -507,12 +539,20 @@ export default function SequenceTool() {
                 e.preventDefault();
                 const d = getDist(e.touches);
                 const ratio = d / startPinchDist;
-                setZoom(parseFloat(Math.min(3, Math.max(0.2, startZoomVal * ratio)).toFixed(3)));
+                const newZoom = parseFloat(Math.min(3, Math.max(0.1, startZoomVal * ratio)).toFixed(3));
+                zoomRef.current = newZoom;
+                panRef.current = { x: startPinchPanX, y: startPinchPanY };
+                setZoom(newZoom);
+                setPanX(startPinchPanX);
+                setPanY(startPinchPanY);
                 setFitActive(false);
             } else if (e.touches.length === 1 && isTouchPanning) {
                 e.preventDefault();
-                el.scrollLeft = startScrollLeft - (e.touches[0].clientX - startTouchX);
-                el.scrollTop = startScrollTop - (e.touches[0].clientY - startTouchY);
+                const newPanX = startPanX + (e.touches[0].clientX - startTouchX);
+                const newPanY = startPanY + (e.touches[0].clientY - startTouchY);
+                panRef.current = { x: newPanX, y: newPanY };
+                setPanX(newPanX);
+                setPanY(newPanY);
             }
         };
 
@@ -531,15 +571,18 @@ export default function SequenceTool() {
         };
     }, [mounted]);
 
-    // ── Pan drag (mouse) ──────────────────────────────────────────────────
+    // ── Mouse drag pan ────────────────────────────────────────────────────
     useEffect(() => {
         const onMove = (e: MouseEvent) => {
-            if (!isDragging.current || !canvasRef.current) return;
-            canvasRef.current.scrollLeft = dragOrigin.current.sl - (e.clientX - dragOrigin.current.x);
-            canvasRef.current.scrollTop = dragOrigin.current.st - (e.clientY - dragOrigin.current.y);
+            if (!isDragging.current) return;
+            const newPanX = dragStartPan.current.x + (e.clientX - dragStartMouse.current.x);
+            const newPanY = dragStartPan.current.y + (e.clientY - dragStartMouse.current.y);
+            panRef.current = { x: newPanX, y: newPanY };
+            setPanX(newPanX);
+            setPanY(newPanY);
         };
         const onUp = () => {
-            if (isDragging.current) { isDragging.current = false; setDraggingCanvas(false); }
+            if (isDragging.current) { isDragging.current = false; setIsPanning(false); }
         };
         window.addEventListener("mousemove", onMove);
         window.addEventListener("mouseup", onUp);
@@ -563,6 +606,27 @@ export default function SequenceTool() {
         return () => window.removeEventListener("resize", check);
     }, []);
 
+    // ── Keyboard shortcuts (Figma-like) ───────────────────────────────────
+    useEffect(() => {
+        if (!mounted) return;
+        const onKeyDown = (e: KeyboardEvent) => {
+            const tag = (e.target as HTMLElement).tagName;
+            if (tag === "TEXTAREA" || tag === "INPUT") return;
+            const mod = e.metaKey || e.ctrlKey;
+            if (mod && e.key === "0") { e.preventDefault(); fitZoom(); }
+            if (mod && (e.key === "=" || e.key === "+")) { e.preventDefault(); setZoom(z => parseFloat(Math.min(3, z + 0.15).toFixed(2))); setFitActive(false); }
+            if (mod && e.key === "-") { e.preventDefault(); setZoom(z => parseFloat(Math.max(0.1, z - 0.15).toFixed(2))); setFitActive(false); }
+            if (e.key === "f" || e.key === "F") fitZoom();
+            if (e.key === " " && !e.repeat) { e.preventDefault(); spaceHeld.current = true; }
+        };
+        const onKeyUp = (e: KeyboardEvent) => {
+            if (e.key === " ") spaceHeld.current = false;
+        };
+        window.addEventListener("keydown", onKeyDown);
+        window.addEventListener("keyup", onKeyUp);
+        return () => { window.removeEventListener("keydown", onKeyDown); window.removeEventListener("keyup", onKeyUp); };
+    }, [mounted, fitZoom]); // eslint-disable-line react-hooks/exhaustive-deps
+
     // ── Persist ───────────────────────────────────────────────────────────
     useEffect(() => { if (mounted) localStorage.setItem("nsd-code", code); }, [code, mounted]);
     useEffect(() => { if (mounted) localStorage.setItem("nsd-opts", JSON.stringify(opts)); }, [opts, mounted]);
@@ -576,18 +640,16 @@ export default function SequenceTool() {
         return m ? { w: parseInt(m[1]), h: parseInt(m[2]) } : null;
     }, [svg]);
 
-    const displaySvg = useMemo(() => {
-        if (!svg || !svgDims) return svg;
-        return svg.replace(
-            /width="\d+" height="\d+"/,
-            `width="${Math.round(svgDims.w * zoom)}" height="${Math.round(svgDims.h * zoom)}"`
-        );
-    }, [svg, svgDims, zoom]);
 
     const fitZoom = useCallback(() => {
         if (!canvasRef.current || !svgDims) return;
         const { clientWidth: cw, clientHeight: ch } = canvasRef.current;
-        setZoom(parseFloat(Math.min((cw - 48) / svgDims.w, (ch - 48) / svgDims.h).toFixed(3)));
+        const newZoom = parseFloat(Math.min((cw - 48) / svgDims.w, (ch - 48) / svgDims.h).toFixed(3));
+        zoomRef.current = newZoom;
+        panRef.current = { x: 0, y: 0 };
+        setZoom(newZoom);
+        setPanX(0);
+        setPanY(0);
         setFitActive(true);
     }, [svgDims]);
 
@@ -761,28 +823,42 @@ export default function SequenceTool() {
 
                 {/* ── Diagram canvas ── */}
                 <div className="flex-1 relative" style={{ background: "#c8d0da" }}>
-                    <div ref={canvasRef} className="absolute inset-0 overflow-auto"
-                        style={{ cursor: draggingCanvas ? "grabbing" : "grab", touchAction: "none" }}
+                    <div ref={canvasRef} className="absolute inset-0 overflow-hidden"
+                        style={{ cursor: isPanning ? "grabbing" : "grab", touchAction: "none" }}
                         onMouseDown={e => {
                             if ((e.target as HTMLElement).closest("button")) return;
                             isDragging.current = true;
-                            setDraggingCanvas(true);
-                            dragOrigin.current = {
-                                x: e.clientX, y: e.clientY,
-                                sl: canvasRef.current?.scrollLeft ?? 0,
-                                st: canvasRef.current?.scrollTop ?? 0,
-                            };
+                            setIsPanning(true);
+                            dragStartMouse.current = { x: e.clientX, y: e.clientY };
+                            dragStartPan.current = { x: panRef.current.x, y: panRef.current.y };
                             e.preventDefault();
                         }}
+                        onDoubleClick={e => {
+                            if ((e.target as HTMLElement).closest("button")) return;
+                            const rect = canvasRef.current!.getBoundingClientRect();
+                            const dx = e.clientX - (rect.left + rect.width / 2);
+                            const dy = e.clientY - (rect.top + rect.height / 2);
+                            const oldZoom = zoomRef.current;
+                            const newZoom = parseFloat(Math.min(3, oldZoom * 1.5).toFixed(3));
+                            const ratio = newZoom / oldZoom;
+                            const newPanX = dx * (1 - ratio) + panRef.current.x * ratio;
+                            const newPanY = dy * (1 - ratio) + panRef.current.y * ratio;
+                            zoomRef.current = newZoom;
+                            panRef.current = { x: newPanX, y: newPanY };
+                            setZoom(newZoom); setPanX(newPanX); setPanY(newPanY); setFitActive(false);
+                        }}
                     >
-                        {mounted && displaySvg ? (
-                            <div style={{
-                                minWidth: "100%", minHeight: "100%",
-                                display: "flex", justifyContent: "center", alignItems: "flex-start",
-                                padding: 24, boxSizing: "border-box",
-                            }}>
-                                <div style={{ flexShrink: 0 }} dangerouslySetInnerHTML={{ __html: displaySvg }} />
-                            </div>
+                        {mounted && svg ? (
+                            <div
+                                style={{
+                                    position: "absolute",
+                                    top: "50%", left: "50%",
+                                    transform: `translate(calc(-50% + ${panX}px), calc(-50% + ${panY}px)) scale(${zoom})`,
+                                    transformOrigin: "center center",
+                                    willChange: "transform",
+                                }}
+                                dangerouslySetInnerHTML={{ __html: svg }}
+                            />
                         ) : (
                             <div className="flex items-center justify-center h-full">
                                 {mounted && (
@@ -857,6 +933,50 @@ export default function SequenceTool() {
                                     letterSpacing: "0.04em",
                                 }}
                             >Fit</button>
+
+                            {!isMobile && <>
+                                <div style={{ width: 1, height: 14, background: "#e2e8f0", margin: "0 6px" }} />
+                                <div style={{ position: "relative" }}>
+                                    <button
+                                        onClick={() => setShowShortcuts(v => !v)}
+                                        className="flex items-center justify-center rounded hover:bg-black/5 transition-all"
+                                        style={{ width: 20, height: 20, fontSize: 10, fontWeight: 700, color: showShortcuts ? "#3b82f6" : "#94a3b8", border: `1px solid ${showShortcuts ? "#3b82f6" : "#cbd5e1"}`, borderRadius: "50%", lineHeight: 1 }}
+                                    >?</button>
+                                    {showShortcuts && (
+                                        <div
+                                            style={{
+                                                position: "absolute",
+                                                bottom: "calc(100% + 10px)",
+                                                right: 0,
+                                                background: "white",
+                                                border: "1px solid #e2e8f0",
+                                                borderRadius: 10,
+                                                boxShadow: "0 4px 24px rgba(0,0,0,0.14)",
+                                                padding: "12px 14px",
+                                                minWidth: 220,
+                                                zIndex: 50,
+                                            }}
+                                        >
+                                            <div style={{ fontSize: 10, fontWeight: 700, color: "#94a3b8", letterSpacing: "0.08em", marginBottom: 8, textTransform: "uppercase" }}>Keyboard Shortcuts</div>
+                                            {[
+                                                ["Scroll", "Pan canvas"],
+                                                ["Ctrl+Scroll", "Zoom to cursor"],
+                                                ["Double-click", "Zoom in 1.5×"],
+                                                ["Space+Drag", "Pan canvas"],
+                                                ["F", "Fit to window"],
+                                                ["⌘0 / Ctrl+0", "Fit to window"],
+                                                ["⌘+ / Ctrl++", "Zoom in"],
+                                                ["⌘− / Ctrl+−", "Zoom out"],
+                                            ].map(([key, desc]) => (
+                                                <div key={key} className="flex items-center justify-between" style={{ gap: 12, marginBottom: 5 }}>
+                                                    <code style={{ fontSize: 10, background: "#f1f5f9", color: "#334155", padding: "1px 6px", borderRadius: 4, fontFamily: "monospace", whiteSpace: "nowrap" }}>{key}</code>
+                                                    <span style={{ fontSize: 11, color: "#64748b" }}>{desc}</span>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
+                            </>}
                         </div>
                     )}
                 </div>
