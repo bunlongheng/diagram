@@ -4,39 +4,39 @@ export const size = { width: 32, height: 32 };
 export const contentType = "image/png";
 
 export default function Icon() {
-  return new ImageResponse(
-    (
-      <div
-        style={{
-          background: "#111113",
-          width: "100%",
-          height: "100%",
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "center",
-          justifyContent: "center",
-          borderRadius: "6px",
-          gap: "3px",
-          padding: "4px",
-        }}
-      >
-        {/* Top: two boxes */}
-        <div style={{ display: "flex", alignItems: "center", gap: "3px" }}>
-          <div style={{ width: 9, height: 7, background: "#3b82f6", borderRadius: 2 }} />
-          <div style={{ width: 6, height: 1.5, background: "#f97316" }} />
-          <div style={{ width: 9, height: 7, background: "#22c55e", borderRadius: 2 }} />
-        </div>
-        {/* Middle: arrow lines */}
-        <div style={{ display: "flex", alignItems: "center", gap: "2px" }}>
-          <div style={{ width: 3, height: 3, background: "#ef4444", borderRadius: "50%" }} />
-          <div style={{ width: 18, height: 1.5, background: "#ef4444" }} />
-        </div>
-        <div style={{ display: "flex", alignItems: "center", gap: "2px", justifyContent: "flex-end" }}>
-          <div style={{ width: 18, height: 1.5, background: "#8b5cf6", opacity: 0.8 }} />
-          <div style={{ width: 3, height: 3, background: "#8b5cf6", borderRadius: "50%" }} />
-        </div>
-      </div>
-    ),
-    { ...size }
-  );
+    return new ImageResponse(
+        (
+            <div
+                style={{
+                    background: "hsl(285, 90%, 52%)",
+                    width: "100%",
+                    height: "100%",
+                    borderRadius: "22%",
+                    display: "flex",
+                    flexDirection: "column",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    gap: "3px",
+                    padding: "5px",
+                }}
+            >
+                {/* Two participant boxes */}
+                <div style={{ display: "flex", gap: "7px" }}>
+                    <div style={{ width: 9, height: 6, background: "white", borderRadius: 2 }} />
+                    <div style={{ width: 9, height: 6, background: "white", borderRadius: 2 }} />
+                </div>
+                {/* Forward arrow */}
+                <div style={{ display: "flex", alignItems: "center" }}>
+                    <div style={{ width: 18, height: 2, background: "white" }} />
+                    <div style={{ width: 0, height: 0, borderTop: "3px solid transparent", borderBottom: "3px solid transparent", borderLeft: "5px solid white" }} />
+                </div>
+                {/* Return arrow */}
+                <div style={{ display: "flex", alignItems: "center", flexDirection: "row-reverse" }}>
+                    <div style={{ width: 18, height: 2, background: "rgba(255,255,255,0.7)" }} />
+                    <div style={{ width: 0, height: 0, borderTop: "3px solid transparent", borderBottom: "3px solid transparent", borderRight: "5px solid rgba(255,255,255,0.7)" }} />
+                </div>
+            </div>
+        ),
+        { ...size }
+    );
 }
