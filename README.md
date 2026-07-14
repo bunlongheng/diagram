@@ -1,113 +1,170 @@
-# Mermaid++ - AI-Powered Diagram Generator
+# Diagrams
 
-Paste any Mermaid syntax and get a beautiful rendered diagram instantly -- or describe what you want in plain English and let AI generate it for you.
+Describe a flow in plain English and Claude turns it into a rendered diagram, or paste Mermaid syntax directly. Sequence diagrams render through a hand-built colorful SVG engine; ~30 other Mermaid types render via Mermaid.js. Save, tag, share, and export - all from one canvas.
 
-**Live --> [mermaid-bheng.netlify.app](https://mermaid-bheng.netlify.app)**
+![Diagrams editor](screenshot.png)
 
-![Screenshot](screenshot.png)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+![Next.js](https://img.shields.io/badge/Next.js-15-black?logo=next.js)
+![React](https://img.shields.io/badge/React-19-149eca?logo=react)
+![TypeScript](https://img.shields.io/badge/TypeScript-strict-3178c6?logo=typescript)
+![Auth.js](https://img.shields.io/badge/Auth.js-v5-a259ff)
+![Tests](https://img.shields.io/badge/tests-vitest%20%2B%20playwright-6e9f18)
 
----
+## Contents
 
-## Tech Stack
-
-| Layer | Technology |
-|-------|------------|
-| Framework | Next.js 15.1.0, React 19.0.0, TypeScript |
-| Styling | Tailwind CSS |
-| Database | Supabase (PostgreSQL) |
-| Auth | Supabase Auth + localhost bypass |
-| AI | Claude API (`@anthropic-ai/sdk`) using `claude-sonnet-4-6` |
-| Rendering | Mermaid.js |
-| UI | lucide-react, prismjs, react-simple-code-editor |
-| Utilities | lz-string, canvas-confetti, qrcode.react |
-| Testing | Vitest (unit) + Playwright (E2E) |
-| Hosting | Vercel + Netlify |
-| Build | Turbo cache enabled |
-
----
-
-## Architecture
-
-```
-app/
-  page.tsx              # Main diagram editor (server component)
-  DiagramsClient.tsx    # Client-side editor + canvas logic
-  DiagramsShell.tsx     # Layout shell with auth
-  MermaidRenderer.tsx   # Mermaid rendering engine
-  CuteToast.tsx         # Toast notifications
-  SignInButton.tsx      # Supabase auth button
-  providers.tsx         # Context providers
-  auth/                 # Auth callback routes
-  d/                    # Shared diagram routes
-  api/                  # API routes (AI generation, etc.)
-lib/                    # Shared utilities + Supabase client
-supabase/               # Migrations + DB config
-tests/                  # Vitest + Playwright tests
-public/                 # Static assets
-```
-
----
+- [Features](#features)
+- [Architecture](#architecture)
+- [How a diagram is rendered](#how-a-diagram-is-rendered)
+- [Tech stack](#tech-stack)
+- [Quick start](#quick-start)
+- [Configuration](#configuration)
+- [Project layout](#project-layout)
+- [License](#license)
 
 ## Features
 
-- **AI diagram generation** -- describe what you want in plain English, Claude generates the Mermaid syntax
-- **Multi-diagram support** -- flowcharts, sequence, class, state, ER, Gantt, pie, mindmap, timeline, gitGraph
-- **Custom sequence renderer** -- hand-crafted colorful SVG with colored lifelines, pill labels, icons, and step numbers
-- **Pan and zoom canvas** -- scroll to pan, Ctrl+scroll to zoom, pinch-to-zoom on mobile, double-click to zoom in, `F` to fit
-- **Dark / Light / Monokai themes**
-- **Export as PNG/SVG** -- 2x retina PNG, raw code, JSON export, copy to clipboard
-- **QR code sharing** -- generate a QR code link to any diagram
-- **Real-time preview** -- live rendering with Prism.js syntax highlighting
-- **Resizable code editor** with dark mode toggle
-- **Mobile responsive** -- full-screen code editor + settings bottom sheet
-- **Supabase Auth** -- secure login with localhost/LAN bypass for development
+- **AI generation** - describe a flow in English; Claude (`@anthropic-ai/sdk`) returns Mermaid, which auto-saves with a token count.
+- **Two render engines** - a custom pure-SVG renderer for `sequenceDiagram` (colored lifelines, numbered steps, pill labels, notes), and Mermaid.js for ~30 other types (flowchart, class, ER, state, gantt, pie, mindmap, timeline, gitGraph, C4, sankey, and more).
+- **Figma-style canvas** - wheel pan, pinch/Ctrl zoom-to-cursor, drag pan, fit-to-view, and keyboard shortcuts (Cmd+S save, Cmd+0/F fit, Cmd+/- zoom, 50-deep undo).
+- **Live editor** - `react-simple-code-editor` with a custom Prism grammar, resizable panel, 1.5s debounced autosave.
+- **Themes** - light, dark, and monokai for both the diagram and the editor chrome, over a fixed 12-color palette.
+- **Persistence** - diagrams saved to Postgres with slugs, tags, per-diagram settings (JSONB), and a public flag.
+- **Sharing** - `/d/[id]` share pages with a server-rasterized 1200x630 OG image, raw `/svg/[id]` download, QR codes, and a native Web Share hook.
+- **Automation API** - `POST /api/ai/diagrams` (Bearer-secret) lets external agents create sequence diagrams and get back an SVG URL, with self-describing 400 responses.
+- **Presenter mode** - fullscreen view with a hold-click spotlight and click-to-highlight, auto-enabled for non-owners.
+- **Export** - 2x-retina PNG, raw SVG, Mermaid source, and parsed-model JSON.
 
----
+## Architecture
+
+A single-owner Next.js App Router app. The interactive editor is a client island; API routes are thin (auth gate then a parameterized `pg` query then JSON). The heart of the app is `lib/svg-renderer.ts` - a pure, DOM-free renderer used verbatim on both the client (live editor) and the server (share page, SVG download, OG image), so sequence rendering has one source of truth.
+
+```mermaid
+flowchart LR
+    U[Browser] --> Page[app/page.tsx editor]
+    Page -->|first-line keyword| Detect{detectDiagramType}
+    Detect -->|sequence| SVG[lib/svg-renderer buildSvg]
+    Detect -->|other| Mermaid[MermaidRenderer dynamic import]
+    Page -->|save / load| API[app/api/diagrams]
+    API --> DB[(Postgres)]
+    Page -->|Generate with AI| AI[app/api/ai/generate]
+    AI --> Claude[Anthropic API]
+    AI --> DB
+    Share[/d/:id share page/] --> SVG
+    Share --> DB
+    OG[opengraph-image] --> SVG
+```
+
+| Layer | Role |
+|-------|------|
+| `app/page.tsx` | View router + the full diagram editor (client) |
+| `app/DiagramsShell.tsx` -> `DiagramsClient.tsx` | Auth gate + the index grid |
+| `app/MermaidRenderer.tsx` | Dynamic Mermaid.js path for non-sequence types |
+| `lib/svg-renderer.ts` | Pure `parse` / `buildSvg` / `detectDiagramType`, shared client + server |
+| `app/api/diagrams/**` | Owner CRUD over a `pg` pool |
+| `app/api/ai/**` | Claude generation + Bearer-secret automation ingress |
+| `app/d/[id]`, `app/svg/[id]`, `opengraph-image` | Public share page, SVG download, PNG unfurl |
+| `auth.ts` + `lib/auth-owner.ts` | NextAuth v5 database sessions, single-owner gate |
+| `lib/db.ts` | One `pg` Pool |
+
+## How a diagram is rendered
+
+```mermaid
+sequenceDiagram
+    participant E as Editor
+    participant D as detectDiagramType
+    participant S as buildSvg (pure)
+    participant M as Mermaid.js
+    E->>D: first non-comment line
+    alt starts with "sequence"
+        D->>S: parse + build SVG string
+        S-->>E: colored SVG (no DOM, no mermaid)
+    else any other type
+        D->>M: dynamic import + render
+        M-->>E: SVG via mermaid
+    end
+```
+
+## Tech stack
+
+- **Framework** - Next.js 15 (App Router), React 19, TypeScript (strict).
+- **Styling** - Tailwind CSS.
+- **Auth** - NextAuth v5 (Auth.js) with the `@auth/pg-adapter`, Google sign-in locked to one owner email.
+- **Database** - PostgreSQL via `pg` (any Postgres: Neon, Supabase, self-hosted).
+- **AI** - Anthropic SDK (`@anthropic-ai/sdk`).
+- **Rendering** - Mermaid.js, plus the custom SVG renderer and `@resvg/resvg-js` for OG PNGs.
+- **UI** - lucide-react, prismjs, react-simple-code-editor, qrcode.react, canvas-confetti, lz-string.
+- **Testing** - Vitest (unit) + Playwright (E2E).
+- **Hosting** - Vercel.
+
+## Quick start
+
+```bash
+git clone https://github.com/bunlongheng/diagrams.git
+cd diagrams
+npm install
+cp .env.local.example .env.local   # fill in the values below
+npm run dev
+```
+
+Then open http://localhost:3002. On localhost the app runs in owner mode without a login. See `.env.local.example` for the full annotated template.
+
+## Configuration
+
+| Env var | Required | Purpose |
+|---------|----------|---------|
+| `DATABASE_URL` | yes | Postgres connection string |
+| `DATABASE_SSL` | prod | `"true"` for remote Postgres |
+| `AUTH_SECRET` | yes | NextAuth session signing (`openssl rand -base64 32`) |
+| `GOOGLE_CLIENT_ID` | yes | Google OAuth client id |
+| `GOOGLE_CLIENT_SECRET` | yes | Google OAuth client secret |
+| `OWNER_EMAIL` | yes | The single email allowed to sign in (fail-closed if unset) |
+| `OWNER_USER_ID` | yes | UUID written as `diagrams.user_id` so existing rows resolve |
+| `AI_API_SECRET` | for API | Bearer token for `POST /api/ai/diagrams` |
+| `ANTHROPIC_API_KEY` | for AI | Claude API key for `POST /api/ai/generate` |
+| `AUTH_TRUST_HOST` | behind proxy | Set `true` when running behind a reverse proxy in prod |
+
+## Project layout
+
+```
+app/
+  page.tsx              # View router + the diagram editor (client)
+  DiagramsShell.tsx     # Auth gate around the index
+  DiagramsClient.tsx    # Index grid: cards, tags, AI prompt modal
+  MermaidRenderer.tsx   # Dynamic Mermaid.js renderer
+  CuteToast.tsx         # Toast system
+  SignInButton.tsx      # Google sign-in button
+  api/
+    ai/                 # generate (Claude) + diagrams (Bearer automation)
+    diagrams/           # owner CRUD + per-id export
+    export/, lan-ip/    # raw export, LAN IP for QR
+  d/[id]/               # public share page + opengraph-image
+  svg/[id]/             # raw SVG download
+  sign-in/              # sign-in page
+lib/
+  svg-renderer.ts       # pure parse/buildSvg/detectDiagramType (client + server)
+  db.ts                 # pg pool
+  auth-owner.ts         # single-owner authorization
+  slugs.ts, is-local.ts # helpers
+  fonts/                # Roboto TTFs for resvg OG rendering
+auth.ts                 # NextAuth v5 config
+middleware.ts           # request middleware
+supabase/migrations/    # SQL migrations (schema history)
+tests/                  # Vitest unit + Playwright e2e
+public/                 # icons + static assets
+```
 
 ## Scripts
 
 | Command | Description |
 |---------|-------------|
-| `npm run dev` | Start dev server on port 3002 |
+| `npm run dev` | Dev server on port 3002 |
 | `npm run build` | Production build |
-| `npm run start` | Start production server |
-| `npm run prod` | Build + start on port 3002 (0.0.0.0) |
-| `npm run lint` | Run ESLint |
-| `npm run test` | Run Vitest unit tests |
-| `npm run test:e2e` | Run Playwright E2E tests |
+| `npm run prod` | Build + start on port 3002 |
+| `npm run test` | Vitest unit tests |
+| `npm run test:e2e` | Playwright E2E tests |
+| `npm run test:all` | Coverage + E2E |
 
----
+## License
 
-## Environment Variables
-
-| Variable | Purpose |
-|----------|---------|
-| `ANTHROPIC_API_KEY` | Claude API key for AI diagram generation |
-| `NEXT_PUBLIC_SUPABASE_URL` | Supabase project URL |
-| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Supabase anonymous key (client-side) |
-| `SUPABASE_SERVICE_ROLE_KEY` | Supabase service role key (server-only) |
-| `AI_API_SECRET` | Secret for AI API route protection |
-| `ALLOWED_EMAIL` | Email allowed for auth access |
-
----
-
-## Project Structure
-
-```
-diagrams/
-  app/                  # Next.js App Router pages + components
-  lib/                  # Utilities, Supabase client, helpers
-  supabase/             # Database migrations
-  tests/                # Unit + E2E test suites
-  public/               # Static assets + icons
-  scripts/              # Build + deploy scripts
-  tailwind.config.js    # Tailwind configuration
-  vitest.config.ts      # Vitest configuration
-  playwright.config.ts  # Playwright configuration
-  turbo.json            # Turbo cache config
-  vercel.json           # Vercel deploy config
-```
-
----
-
-Built by [Bunlong Heng](https://www.bunlongheng.com) | [GitHub](https://github.com/bunlongheng/diagrams)
+[MIT](LICENSE) (c) Bunlong Heng
