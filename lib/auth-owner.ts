@@ -40,3 +40,14 @@ export function ownerId(): string | null {
 export async function resolveOwnerId(req: Request): Promise<string | null> {
   return (await authorizeOwner(req)) ? ownerId() : null;
 }
+
+// Server-component authorization: no Request is available, so authorize on the
+// dev bypass or the NextAuth owner-email session (auth() reads cookies itself).
+// Used by the server-rendered index page.
+export async function resolveOwnerIdServer(): Promise<string | null> {
+  const devBypass = process.env.NODE_ENV !== "production" || process.env.LOCAL_DEV === "true";
+  if (devBypass) return ownerId();
+  if (!OWNER_EMAIL) return null;
+  const session = await auth();
+  return session?.user?.email?.toLowerCase() === OWNER_EMAIL ? ownerId() : null;
+}

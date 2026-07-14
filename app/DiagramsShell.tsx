@@ -9,12 +9,16 @@ type Diagram = {
   diagram_type: string; created_at: string; updated_at: string; code: string; tags: string[];
 };
 
-export default function DiagramsShell() {
-  const [user, setUser] = useState<ShellUser | null>(null);
-  const [diagrams, setDiagrams] = useState<Diagram[]>([]);
-  const [ready, setReady] = useState(false); // true only after auth + diagrams resolved
+export default function DiagramsShell({ initial }: { initial?: { user: ShellUser | null; diagrams: Diagram[] } }) {
+  const [user, setUser] = useState<ShellUser | null>(initial?.user ?? null);
+  const [diagrams, setDiagrams] = useState<Diagram[]>(initial?.diagrams ?? []);
+  // When the server already resolved auth + diagrams (direct index load) we are
+  // ready on first paint - no client waterfall. The client fetch only runs when
+  // no server data was provided (e.g. returning here from the editor route).
+  const [ready, setReady] = useState(!!initial);
 
   useEffect(() => {
+    if (initial) return;
     let cancelled = false;
 
     (async () => {
