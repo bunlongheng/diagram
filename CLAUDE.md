@@ -12,8 +12,8 @@
 - detectDiagramType reads the first line keyword to pick the renderer.
 
 ## Infra
-- Deploy: `NODE_TLS_REJECT_UNAUTHORIZED=0 netlify deploy --prod`
-- Live URL: https://mermaid-bheng.netlify.app
+- Deploy: Vercel (auto-deploys on push; `vercel --prod` for a manual prod deploy)
+- Live URL: https://diagrams-bheng.vercel.app
 - Stack: Bun (`bun run build`, `bun dev`) alongside the npm scripts.
 
 ## Test

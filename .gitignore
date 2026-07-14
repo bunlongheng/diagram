@@ -29,9 +29,6 @@ yarn-error.log*
 # vercel
 .vercel
 
-# netlify
-.netlify/
-
 # supabase CLI local state (dropped after the NextAuth migration)
 supabase/.temp/
 
