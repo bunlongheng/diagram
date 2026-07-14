@@ -1,6 +1,16 @@
 import type { Metadata, Viewport } from "next";
+import localFont from "next/font/local";
 import "./globals.css";
 import Providers from "./providers";
+
+const roboto = localFont({
+  src: [
+    { path: "../lib/fonts/Roboto-Regular.ttf", weight: "400", style: "normal" },
+    { path: "../lib/fonts/Roboto-Bold.ttf", weight: "700", style: "normal" },
+  ],
+  variable: "--font-roboto",
+  display: "swap",
+});
 
 export const viewport: Viewport = {
   width: "device-width",
@@ -33,12 +43,7 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en">
-      <head>
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet" />
-      </head>
+    <html lang="en" className={roboto.variable}>
       <body suppressHydrationWarning>
         <Providers>{children}</Providers>
       </body>

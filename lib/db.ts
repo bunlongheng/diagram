@@ -2,7 +2,7 @@ import { Pool } from "pg";
 
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
-  ssl: process.env.DATABASE_SSL === "true" ? { rejectUnauthorized: false } : false,
+  ssl: process.env.DATABASE_SSL === "true" ? { rejectUnauthorized: process.env.NODE_ENV === "production" } : false,
   max: 10,
   // Serverless hardening: a blocked connect now rejects fast instead of riding
   // to Vercel's gateway timeout (504). Idle connections are recycled.

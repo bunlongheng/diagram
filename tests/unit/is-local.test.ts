@@ -1,4 +1,4 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 import { isLocal } from "@/lib/is-local";
 
 // Helper: build a minimal fake Request with a given host header value.
@@ -27,30 +27,20 @@ describe("isLocal returns true for local hosts", () => {
     expect(isLocal(req("127.0.0.1:3000"))).toBe(true);
   });
 
-  it("subdomain of localhost (foo.localhost)", () => {
-    expect(isLocal(req("foo.localhost"))).toBe(true);
+  it("full 10.x LAN IP (10.0.0.5)", () => {
+    expect(isLocal(req("10.0.0.5"))).toBe(true);
   });
 
-  it("subdomain of localhost with port (app.localhost:3002)", () => {
-    expect(isLocal(req("app.localhost:3002"))).toBe(true);
+  it("full 192.168.x LAN IP (192.168.1.20)", () => {
+    expect(isLocal(req("192.168.1.20"))).toBe(true);
   });
 
-  it("bare '10.' prefix string matches the regex group exactly", () => {
-    // The group '10\.' matches the 3-char literal "10."; end-of-string follows.
-    expect(isLocal(req("10."))).toBe(true);
+  it("full 172.16-31.x LAN IP (172.16.0.1)", () => {
+    expect(isLocal(req("172.16.0.1"))).toBe(true);
   });
 
-  it("bare '10.' prefix with port", () => {
-    // Group matches "10.", port clause matches ":8080", then end-of-string.
-    expect(isLocal(req("10.:8080"))).toBe(true);
-  });
-
-  it("bare '192.168.' prefix string matches the regex group exactly", () => {
-    expect(isLocal(req("192.168."))).toBe(true);
-  });
-
-  it("bare '192.168.' prefix with port", () => {
-    expect(isLocal(req("192.168.:4000"))).toBe(true);
+  it("full 172.31.x LAN IP with port", () => {
+    expect(isLocal(req("172.31.255.1:8080"))).toBe(true);
   });
 });
 
@@ -66,21 +56,32 @@ describe("isLocal returns false for public / non-local hosts", () => {
     expect(isLocal(req("diagrams-bheng.vercel.app"))).toBe(false);
   });
 
-  it("full 10.x IP is false — regex '10\\.' only matches the bare prefix 'to.'", () => {
-    // "10.0.0.5" has extra octets after "10." that the regex cannot consume.
-    expect(isLocal(req("10.0.0.5"))).toBe(false);
+  it("subdomain of localhost is NOT local (evil.localhost) — no wildcard bypass", () => {
+    expect(isLocal(req("evil.localhost"))).toBe(false);
   });
 
-  it("full 192.168.x IP is false — regex '192\\.168\\.' only matches the bare prefix", () => {
-    expect(isLocal(req("192.168.1.20"))).toBe(false);
+  it("subdomain of localhost with port is NOT local (app.localhost:3002)", () => {
+    expect(isLocal(req("app.localhost:3002"))).toBe(false);
+  });
+
+  it("bare '10.' prefix string (no full octets) is false", () => {
+    expect(isLocal(req("10."))).toBe(false);
+  });
+
+  it("bare '192.168.' prefix string (no full octets) is false", () => {
+    expect(isLocal(req("192.168."))).toBe(false);
   });
 
   it("11.x address (does not start with '10.')", () => {
     expect(isLocal(req("11.0.0.1"))).toBe(false);
   });
 
-  it("172.16.x (not covered by regex at all)", () => {
-    expect(isLocal(req("172.16.0.1"))).toBe(false);
+  it("172.15.x is outside the 172.16-31 private range", () => {
+    expect(isLocal(req("172.15.0.1"))).toBe(false);
+  });
+
+  it("172.32.x is outside the 172.16-31 private range", () => {
+    expect(isLocal(req("172.32.0.1"))).toBe(false);
   });
 
   it("empty host string", () => {
@@ -96,5 +97,30 @@ describe("isLocal returns false for public / non-local hosts", () => {
       headers: { get: () => null },
     }) as unknown as Request;
     expect(isLocal(noHostReq)).toBe(false);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// isLocal — production gate
+// ---------------------------------------------------------------------------
+describe("isLocal respects NODE_ENV=production", () => {
+  it("returns false in production even for a Host header claiming localhost", () => {
+    vi.stubEnv("NODE_ENV", "production");
+    vi.stubEnv("LOCAL_DEV", "");
+    try {
+      expect(isLocal(req("localhost"))).toBe(false);
+    } finally {
+      vi.unstubAllEnvs();
+    }
+  });
+
+  it("allows the local check in production when LOCAL_DEV=true", () => {
+    vi.stubEnv("NODE_ENV", "production");
+    vi.stubEnv("LOCAL_DEV", "true");
+    try {
+      expect(isLocal(req("localhost"))).toBe(true);
+    } finally {
+      vi.unstubAllEnvs();
+    }
   });
 });

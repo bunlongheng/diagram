@@ -23,11 +23,14 @@ export default function DiagramsShell() {
         // 200 on a real owner session OR a local/LAN request (Stickies-style
         // bypass); 401 otherwise. Avoids relying on getSession() alone, which
         // is null on localhost where there is no real session.
-        const res = await fetch("/api/diagrams");
+        // Both awaits are independent, so run them concurrently.
+        const [res, session] = await Promise.all([
+          fetch("/api/diagrams"),
+          getSession().catch(() => null),
+        ]);
         if (!res.ok) { if (!cancelled) { setUser(null); setReady(true); } return; }
 
         const data = await res.json();
-        const session = await getSession().catch(() => null);
         if (cancelled) return;
 
         if (Array.isArray(data)) setDiagrams(data);

@@ -6,7 +6,7 @@ import { CuteToast, showToast } from "@/app/CuteToast";
 import { Bot, Plug, Briefcase, User as UserIcon, FlaskConical, Clipboard, GraduationCap, Lightbulb, Rocket, Star, Heart, Tag, Youtube } from "lucide-react";
 
 // Shape the shell passes in: NextAuth session user mapped to the fields this
-// component reads (replaces the old Supabase User type).
+// component reads.
 export type ShellUser = {
   email?: string;
   user_metadata?: { full_name?: string; name?: string; avatar_url?: string; picture?: string };
@@ -825,8 +825,8 @@ export default function DiagramsClient({ user, diagrams: initial }: { user: Shel
     return () => document.removeEventListener("mousedown", h);
   }, []);
 
-  // Realtime AI-diagram notifications were Supabase Realtime; removed with the
-  // Supabase migration. (Could be restored later via Pusher, like Stickies.)
+  // Realtime AI-diagram notifications were removed with the auth migration.
+  // (Could be restored later via Pusher.)
 
   // ── Global paste — save new record + open in editor ───────────────────────
   useEffect(() => {
@@ -1136,7 +1136,7 @@ export default function DiagramsClient({ user, diagrams: initial }: { user: Shel
         <div onClick={() => setConfirmDeleteId(null)} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.25)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000, backdropFilter: "blur(6px)" }}>
           <div onClick={e => e.stopPropagation()} style={{ background: "#ffffff", borderRadius: 16, padding: "28px 28px 24px", width: 380, boxShadow: "0 24px 64px rgba(0,0,0,0.12)" }}>
             <h3 style={{ fontSize: 15, fontWeight: 700, color: "#1c1e21", margin: "0 0 8px" }}>Delete diagram?</h3>
-            <p style={{ fontSize: 13, color: "#65676b", margin: "0 0 24px", lineHeight: 1.5 }}>This can't be undone.</p>
+            <p style={{ fontSize: 13, color: "#65676b", margin: "0 0 24px", lineHeight: 1.5 }}>This can&apos;t be undone.</p>
             <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
               <button onClick={() => setConfirmDeleteId(null)} style={{ padding: "9px 18px", border: "1px solid #e4e6e8", borderRadius: 9, background: "#f4f5f7", cursor: "pointer", fontSize: 13, fontFamily: "inherit", color: "#65676b" }}>Cancel</button>
               <button onClick={() => deleteDiagram(confirmDeleteId)} style={{ padding: "9px 22px", background: "#dc2626", color: "#fff", border: "none", borderRadius: 9, cursor: "pointer", fontSize: 13, fontWeight: 600, fontFamily: "inherit" }}>Delete</button>
@@ -1156,8 +1156,7 @@ export default function DiagramsClient({ user, diagrams: initial }: { user: Shel
             {[
               { label: "1. Generate with AI", tag: "Built-in", tagColor: "#a855f7", code: `Click the ✦ button on the index page and describe your diagram\nin plain English. Claude generates the Mermaid code and saves\nit to your library automatically.\n\nExample prompt: "OAuth 2.0 login flow between user, frontend,\nand auth server"` },
               { label: "2. Paste (⌘V) anywhere", tag: "Auto-detect", tagColor: "#16a34a", code: `sequenceDiagram\n  participant A as Alice\n  participant B as Bob\n  A->>B: Hello!\n  B-->>A: Hi there` },
-              { label: "3. POST via API", tag: "External agents", tagColor: "#6366f1", code: `curl -X POST ${process.env.NEXT_PUBLIC_APP_URL ?? "https://diagrams-bheng.vercel.app"}/api/ai/diagrams \\\n  -H "Authorization: Bearer $AI_API_SECRET" \\\n  -H "Content-Type: application/json" \\\n  -d '{\n    "title": "My Diagram Title",\n    "diagramType": "sequence",\n    "code": "---\\ntitle: My Diagram\\n---\\nsequenceDiagram\\n  participant A as 🧑 User\\n  participant B as ⚙️ Server\\n  A->>B: Request\\n  B-->>A: Response"\n  }'` },
-              { label: "AI agents — how to discover this API", tag: "For Claude/LLM", tagColor: "#0ea5e9", code: `If you are an AI assistant, here is how to learn this endpoint:\n\n1. The Bearer token is auto-loaded in every shell at this Mac:\n     source ~/.zshrc   # exports $AI_API_SECRET\n\n2. Search the user's stickies for the full reference:\n     stickies search "Diagrams Import API"\n     (or read sticky 51275297-852b-4f6a-bb6f-cce7eb819648)\n\n3. Or call the endpoint with no body — it returns a JSON\n   "sample_request" you can copy verbatim:\n     curl -X POST ${process.env.NEXT_PUBLIC_APP_URL ?? "https://diagrams-bheng.vercel.app"}/api/ai/diagrams \\\n       -H "Authorization: Bearer $AI_API_SECRET"\n\n4. Project memory at:\n   ~/.claude/projects/-Users-bheng-Sites-diagrams/memory/\n     reference_diagrams_import_api.md` },
+              { label: "3. POST via API", tag: "External agents", tagColor: "#6366f1", code: `curl -X POST ${process.env.NEXT_PUBLIC_APP_URL ?? "https://diagrams-bheng.vercel.app"}/api/ai/diagrams \\\n  -H "Authorization: Bearer <token>" \\\n  -H "Content-Type: application/json" \\\n  -d '{\n    "title": "My Diagram Title",\n    "diagramType": "sequence",\n    "code": "---\\ntitle: My Diagram\\n---\\nsequenceDiagram\\n  participant A as 🧑 User\\n  participant B as ⚙️ Server\\n  A->>B: Request\\n  B-->>A: Response"\n  }'` },
             ].map(({ label, tag, tagColor, code }) => (
               <div key={label} style={{ marginBottom: 20 }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 7 }}>

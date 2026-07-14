@@ -71,16 +71,13 @@ export async function GET(
   } catch (outerErr: unknown) {
     const msg = outerErr instanceof Error ? outerErr.message : String(outerErr);
     console.error("[export] outer catch:", msg);
-    return NextResponse.json({ error: "Internal error", detail: msg }, { status: 500 });
+    return NextResponse.json({ error: "Internal error" }, { status: 500 });
   }
 }
 
 // ── Fetch SVG using Node's https module (respects NODE_TLS_REJECT_UNAUTHORIZED) ─
 function fetchSVG(url: string): Promise<string | null> {
   return new Promise((resolve) => {
-    // Ensure TLS verification is disabled for local dev
-    process.env.NODE_TLS_REJECT_UNAUTHORIZED = "0";
-
     import("node:https").then(({ default: https }) => {
       const req = https.get(url, { headers: { "User-Agent": "diagrams-bheng-export/1.0" } }, (res) => {
         if (res.statusCode !== 200) {

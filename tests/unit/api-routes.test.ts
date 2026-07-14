@@ -459,7 +459,7 @@ describe("GET /api/export", () => {
   it("returns 200 with code when diagram exists", async () => {
     const { GET } = await import("@/app/api/export/route");
     q.mockResolvedValue({
-      rows: [{ code: "sequenceDiagram\nA->>B: hi", settings: {}, title: "Test" }],
+      rows: [{ code: "sequenceDiagram\nA->>B: hi", settings: {}, title: "Test", is_public: true }],
       rowCount: 1,
     });
     const req = new NextRequest("http://localhost:3002/api/export?id=00000000-0000-0000-0000-000000000000");
@@ -517,6 +517,7 @@ describe("GET /svg/[id]", () => {
         settings: null,
         title: "Test",
         created_at: new Date().toISOString(),
+        is_public: true,
       }],
       rowCount: 1,
     });

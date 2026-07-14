@@ -547,7 +547,7 @@ export default function Home() {
 
 // ── Editor ────────────────────────────────────────────────────────────────────
 function DiagramEditor({ goBack }: { goBack: () => void }) {
-    const [supabaseUser, setSupabaseUser] = useState<{ id: string; email?: string; user_metadata?: Record<string,string> } | null>(null);
+    const [ownerUser, setOwnerUser] = useState<{ id: string; email?: string; user_metadata?: Record<string,string> } | null>(null);
     const [mounted, setMounted] = useState(false);
     const [isMobile, setIsMobile] = useState(false);
     const [code, setCode] = useState("");
@@ -626,14 +626,14 @@ function DiagramEditor({ goBack }: { goBack: () => void }) {
             if (titleEl) titleEl.textContent = t;
         }
         showToast(`Title saved`, { color: "#7c3aed" });
-        if (savedDiagramId && supabaseUser) {
+        if (savedDiagramId && ownerUser) {
             fetch(`/api/diagrams/${savedDiagramId}`, {
                 method: "PATCH",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ title: t, code: newCode }),
             }).then(r => { if (!r.ok) r.json().then(e => showToast(`Save failed: ${e.error}`, { color: "#ef4444" })).catch(() => {}); });
         }
-    }, [code, savedDiagramId, supabaseUser, svgWrapRef]);
+    }, [code, savedDiagramId, ownerUser, svgWrapRef]);
 
 
     const clampPan = useCallback((p: { x: number; y: number }): { x: number; y: number } => {
@@ -875,7 +875,7 @@ function DiagramEditor({ goBack }: { goBack: () => void }) {
         // editor; otherwise presenter mode. Reflects the server gate.
         fetch("/api/auth/me").then(r => r.json()).then(({ authorized }) => {
             if (authorized) {
-                setSupabaseUser({ id: "owner" });
+                setOwnerUser({ id: "owner" });
                 if (pendingTitleToastRef.current) {
                     const t = pendingTitleToastRef.current;
                     pendingTitleToastRef.current = null;
@@ -1088,13 +1088,13 @@ function DiagramEditor({ goBack }: { goBack: () => void }) {
     const undoStack = useRef<Opts[]>([]);
     const saveDiagramRef = useRef<(() => void) | null>(null);
     const saveSettings = useCallback((newOpts: Opts, newLayout: Layout) => {
-        if (!savedDiagramId || !supabaseUser) return;
+        if (!savedDiagramId || !ownerUser) return;
         fetch(`/api/diagrams/${savedDiagramId}`, {
             method: "PATCH",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ settings: { opts: newOpts, layout: newLayout } }),
         }).catch(() => {});
-    }, [savedDiagramId, supabaseUser]);
+    }, [savedDiagramId, ownerUser]);
 
     const upd = (p: Partial<Opts>) => setOpts(o => {
         undoStack.current.push(o);
@@ -1208,7 +1208,7 @@ No explanation, no markdown, just the JSON object.`,
     }, [code]);
 
     const saveDiagram = useCallback(async (codeToSave?: string) => {
-        if (!supabaseUser) return;
+        if (!ownerUser) return;
         const c = codeToSave ?? code;
         if (!c.trim()) return; // don't save empty/placeholder
         const title = extractTitle(c);
@@ -1235,7 +1235,7 @@ No explanation, no markdown, just the JSON object.`,
             const msg = e instanceof Error ? e.message : String(e);
             showToast(`Save failed: ${msg}`, { color: "#ef4444" });
         }
-    }, [supabaseUser, code]);
+    }, [ownerUser, code]);
 
     // Keep ref in sync so keydown handler (stale closure) can call latest saveDiagram
     useEffect(() => { saveDiagramRef.current = () => saveDiagram(); }, [saveDiagram]);
@@ -1243,7 +1243,7 @@ No explanation, no markdown, just the JSON object.`,
     // ── Autosave on code change (update existing record) ──────────────────
     const autoSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
     useEffect(() => {
-        if (!supabaseUser || !savedDiagramId || !code.trim()) return;
+        if (!ownerUser || !savedDiagramId || !code.trim()) return;
         if (autoSaveTimer.current) clearTimeout(autoSaveTimer.current);
         autoSaveTimer.current = setTimeout(() => {
             fetch(`/api/diagrams/${savedDiagramId}`, {
@@ -1253,7 +1253,7 @@ No explanation, no markdown, just the JSON object.`,
             }).catch(() => {});
         }, 1500);
         return () => { if (autoSaveTimer.current) clearTimeout(autoSaveTimer.current); };
-    }, [code, savedDiagramId, supabaseUser]);
+    }, [code, savedDiagramId, ownerUser]);
 
     const PROD_URL = "https://diagrams-bheng.vercel.app";
     const buildShareUrl = useCallback(() => {
@@ -1348,11 +1348,11 @@ No explanation, no markdown, just the JSON object.`,
             setTimeout(fireConfetti, 150);
             setTimeout(fitZoom, 120);
             // Always save as a NEW record
-            if (supabaseUser) setTimeout(() => saveDiagram(pasted), 300);
+            if (ownerUser) setTimeout(() => saveDiagram(pasted), 300);
         };
         document.addEventListener("paste", onGlobalPaste, true);
         return () => document.removeEventListener("paste", onGlobalPaste, true);
-    }, [fireConfetti, fitZoom, supabaseUser, saveDiagram]);
+    }, [fireConfetti, fitZoom, ownerUser, saveDiagram]);
 
     const ut = UI_THEMES[opts.theme] ?? UI_THEMES.light;
 

@@ -1,3 +1,4 @@
+import crypto from "crypto";
 import { NextRequest, NextResponse } from "next/server";
 import { ownerId } from "@/lib/auth-owner";
 import db from "@/lib/db";
@@ -37,7 +38,7 @@ export async function POST(req: NextRequest) {
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : String(err);
     console.error("[ai/diagrams] unhandled error:", msg);
-    return NextResponse.json({ error: "Internal error", detail: msg }, { status: 500 });
+    return NextResponse.json({ error: "Internal error" }, { status: 500 });
   }
 }
 
@@ -46,8 +47,10 @@ async function postHandler(req: NextRequest) {
   if (!AI_SECRET) {
     return NextResponse.json({ error: "AI_API_SECRET not configured" }, { status: 500 });
   }
-  const bearer = req.headers.get("authorization")?.replace(/^Bearer\s+/i, "").trim();
-  if (bearer !== AI_SECRET) {
+  const header = req.headers.get("authorization") ?? "";
+  const expected = `Bearer ${AI_SECRET}`;
+  const authorized = header.length === expected.length && crypto.timingSafeEqual(Buffer.from(header), Buffer.from(expected));
+  if (!authorized) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 

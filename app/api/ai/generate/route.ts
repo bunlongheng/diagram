@@ -2,10 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import Anthropic from "@anthropic-ai/sdk";
 import { authorizeOwner, ownerId } from "@/lib/auth-owner";
 import db from "@/lib/db";
-
-function toSlug(title: string): string {
-  return title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "untitled";
-}
+import { uniqueDiagramSlug } from "@/lib/slugs";
 
 const SYSTEM = `You are an expert Mermaid sequence diagram generator.
 
@@ -66,16 +63,7 @@ export async function POST(req: NextRequest) {
   const ownerUserId = ownerId();
   if (!ownerUserId) return NextResponse.json({ error: "OWNER_USER_ID not configured" }, { status: 500 });
 
-  const baseSlug = toSlug(title);
-  let slug = baseSlug, counter = 2;
-  while (true) {
-    const { rows } = await db.query(
-      "SELECT id FROM diagrams WHERE user_id = $1 AND slug = $2 LIMIT 1",
-      [ownerUserId, slug]
-    );
-    if (rows.length === 0) break;
-    slug = `${baseSlug}-${counter++}`;
-  }
+  const slug = await uniqueDiagramSlug(ownerUserId, title);
 
   // Ensure title is embedded in the code
   let finalCode = code.trim();

@@ -1,5 +1,6 @@
 "use client";
 import { Suspense, useState } from "react";
+import Link from "next/link";
 import { signIn } from "next-auth/react";
 
 function SignIn() {
@@ -24,7 +25,7 @@ function SignIn() {
         <h1 style={{ fontSize: 24, fontWeight: 700, color: "#e8eaf8", margin: 0 }}>Diagrams</h1>
         <p style={{ fontSize: 14, color: "#5a5c7a", margin: 0 }}>Sign in to view your saved diagrams</p>
         {isDev ? (
-          <a href="/" style={{ fontSize: 14, fontWeight: 600, color: "#a78bfa", textDecoration: "none" }}>Go in (dev) →</a>
+          <Link href="/" style={{ fontSize: 14, fontWeight: 600, color: "#a78bfa", textDecoration: "none" }}>Go in (dev)</Link>
         ) : (
           <button onClick={signInWithGoogle} disabled={loading} style={{
             display: "flex", alignItems: "center", justifyContent: "center", gap: 10,

@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import db from "@/lib/db";
 import { parse, buildSvg, DEFAULT_OPTS, DEFAULT_LAYOUT } from "@/lib/svg-renderer";
 import type { Opts, Layout } from "@/lib/svg-renderer";
+import { authorizeOwner } from "@/lib/auth-owner";
 
 export const dynamic = "force-dynamic";
 
@@ -9,16 +10,19 @@ function toSlug(s: string) {
   return s.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "diagram";
 }
 
-export async function GET(_req: Request, { params }: { params: Promise<{ id: string }> }) {
+export async function GET(req: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)) {
     return NextResponse.json({ error: "Invalid ID" }, { status: 400 });
   }
 
-  const { rows } = await db.query("SELECT code, settings, title, created_at FROM diagrams WHERE id = $1", [id]);
+  const { rows } = await db.query("SELECT code, settings, title, created_at, is_public FROM diagrams WHERE id = $1", [id]);
   if (!rows.length) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
-  const { code, settings, title, created_at } = rows[0];
+  const { code, settings, title, created_at, is_public } = rows[0];
+  if (!is_public && !(await authorizeOwner(req))) {
+    return NextResponse.json({ error: "Not found" }, { status: 404 });
+  }
   if (!code?.trim()) return NextResponse.json({ error: "No code" }, { status: 400 });
 
   const opts: Opts = { ...DEFAULT_OPTS, ...(settings?.opts ?? {}) };

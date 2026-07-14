@@ -218,6 +218,8 @@ describe("DiagramsShell", () => {
   });
 
   it("shows loading state before fetch resolves", async () => {
+    // getSession runs concurrently with the fetch now, so give it a real promise
+    mockGetSession.mockResolvedValue(null);
     // Block the fetch indefinitely
     server.use(
       http.get("*/api/diagrams", () => new Promise(() => {}))
