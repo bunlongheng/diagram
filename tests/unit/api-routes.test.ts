@@ -2,7 +2,7 @@
  * API Route Handler Tests
  *
  * Tests all route handlers without hitting real DB or Anthropic.
- * Auth is via @/lib/auth-owner mocks (no Supabase).
+ * Auth is via @/lib/auth-owner mocks.
  * The ai/diagrams and [id]/export routes read AI_SECRET at module scope,
  * so they require dynamic import after vi.stubEnv + vi.resetModules.
  */

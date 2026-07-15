@@ -90,7 +90,7 @@ sequenceDiagram
 - **Framework** - Next.js 15 (App Router), React 19, TypeScript (strict).
 - **Styling** - Tailwind CSS.
 - **Auth** - NextAuth v5 (Auth.js) with the `@auth/pg-adapter`, Google sign-in locked to one owner email.
-- **Database** - PostgreSQL via `pg` (any Postgres: Neon, Supabase, self-hosted).
+- **Database** - PostgreSQL via `pg` (Neon, or any self-hosted Postgres).
 - **AI** - Anthropic SDK (`@anthropic-ai/sdk`).
 - **Rendering** - Mermaid.js, plus the custom SVG renderer and `@resvg/resvg-js` for OG PNGs.
 - **UI** - lucide-react, prismjs, react-simple-code-editor, qrcode.react, canvas-confetti, lz-string.

@@ -136,7 +136,7 @@ async function postHandler(req: NextRequest) {
     },
   }, { status: 400 });
 
-  // ── Resolve owner user_id (legacy Supabase UUID via OWNER_USER_ID) ─────────
+  // ── Resolve owner user_id (legacy owner UUID via OWNER_USER_ID) ─────────
   const ownerUserId = ownerId();
   if (!ownerUserId) {
     return NextResponse.json({ error: "OWNER_USER_ID not configured" }, { status: 500 });

@@ -30,7 +30,7 @@ export async function authorizeOwner(req: Request): Promise<boolean> {
   return session?.user?.email?.toLowerCase() === OWNER_EMAIL;
 }
 
-// The DB user_id used for the owner's rows. The legacy Supabase owner UUID is
+// The DB user_id used for the owner's rows. The legacy owner UUID is
 // preserved via OWNER_USER_ID so existing diagrams keep resolving.
 export function ownerId(): string | null {
   return process.env.OWNER_USER_ID?.trim() || null;

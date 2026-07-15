@@ -4,7 +4,7 @@ import PostgresAdapter from "@auth/pg-adapter";
 import pool from "@/lib/db";
 
 // Mirrors the Stickies auth model: NextAuth v5 + Postgres adapter + database
-// sessions, gated to a single owner email. No Supabase.
+// sessions, gated to a single owner email.
 const OWNER_EMAIL = (process.env.OWNER_EMAIL ?? process.env.ALLOWED_EMAIL)?.trim().toLowerCase();
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
@@ -26,7 +26,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       }
       return user.email.toLowerCase() === OWNER_EMAIL;
     },
-    // Carry the legacy Supabase owner UUID so existing diagrams (user_id =
+    // Carry the legacy owner UUID so existing diagrams (user_id =
     // that UUID) keep resolving without a data migration.
     async session({ session, user }) {
       const legacy = process.env.OWNER_USER_ID?.trim();
