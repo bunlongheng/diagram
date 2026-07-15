@@ -3,6 +3,7 @@ import Anthropic from "@anthropic-ai/sdk";
 import { authorizeOwner, ownerId } from "@/lib/auth-owner";
 import db from "@/lib/db";
 import { uniqueDiagramSlug } from "@/lib/slugs";
+import { embedTitleInCode } from "@/lib/diagram-code";
 
 const SYSTEM = `You are an expert Mermaid sequence diagram generator.
 
@@ -72,10 +73,7 @@ export async function POST(req: NextRequest) {
   const slug = await uniqueDiagramSlug(ownerUserId, title);
 
   // Ensure title is embedded in the code
-  let finalCode = code.trim();
-  if (!/^title:?\s+.+$/im.test(finalCode)) {
-    finalCode = finalCode.replace(/^(sequenceDiagram[^\n]*\n?)/im, `$1    title: ${title.trim()}\n`);
-  }
+  const finalCode = embedTitleInCode(code, title);
 
   const settings = { opts: { boxOverlay: "gloss", iconMode: "icons" } };
   const { rows } = await db.query(

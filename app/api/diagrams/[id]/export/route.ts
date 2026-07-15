@@ -11,6 +11,11 @@ const AI_SECRET = process.env.AI_API_SECRET;
  * cloud renderer). mermaid.ink uses a real browser engine so text metrics
  * and layout are correct — server-side DOM polyfills cannot replicate this.
  *
+ * NOTE: this sends the diagram code off-host to mermaid.ink (base64 in the URL).
+ * It is owner-only (Bearer AI_API_SECRET), so it is the owner acting on their own
+ * data, but callers should know the code leaves this server. `svg` is null when
+ * mermaid.ink is unreachable; deck-gen.mjs falls back to inline CDN rendering.
+ *
  * Headers:
  *   Authorization: Bearer <AI_API_SECRET>
  *

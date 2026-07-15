@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { ownerId } from "@/lib/auth-owner";
 import db from "@/lib/db";
 import { uniqueDiagramSlug } from "@/lib/slugs";
+import { embedTitleInCode } from "@/lib/diagram-code";
 
 const AI_SECRET = process.env.AI_API_SECRET;
 
@@ -145,13 +146,7 @@ async function postHandler(req: NextRequest) {
   const slug = await uniqueDiagramSlug(ownerUserId, title);
 
   // ── Ensure title is embedded in the code ────────────────────────────────
-  let finalCode = code.trim();
-  if (!/^title:?\s+.+$/im.test(finalCode)) {
-    finalCode = finalCode.replace(
-      /^(sequenceDiagram[^\n]*\n?)/im,
-      `$1    title: ${title.trim()}\n`
-    );
-  }
+  const finalCode = embedTitleInCode(code, title);
 
   // ── Insert ────────────────────────────────────────────────────────────────
   // vPad: 50 gives breathing room between pills so API-rendered SVGs never
