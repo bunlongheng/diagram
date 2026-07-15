@@ -43,9 +43,11 @@ export async function resolveOwnerId(req: Request): Promise<string | null> {
 
 // Server-component authorization: no Request is available, so authorize on the
 // dev bypass or the NextAuth owner-email session (auth() reads cookies itself).
+// The bypass only fires under a real local `next dev` (NODE_ENV=development) -
+// production always requires the owner session, and no stray env var can flip it.
 // Used by the server-rendered index page.
 export async function resolveOwnerIdServer(): Promise<string | null> {
-  const devBypass = process.env.NODE_ENV !== "production" || process.env.LOCAL_DEV === "true";
+  const devBypass = process.env.NODE_ENV === "development";
   if (devBypass) return ownerId();
   if (!OWNER_EMAIL) return null;
   const session = await auth();

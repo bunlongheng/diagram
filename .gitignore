@@ -36,3 +36,7 @@ supabase/.temp/
 tsconfig.tsbuildinfo
 smoke-test.mjs
 .env*.local
+
+# repo-audit artifacts
+audit-report.html
+docs/screenshots/

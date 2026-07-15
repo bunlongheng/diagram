@@ -55,8 +55,14 @@ export async function POST(req: NextRequest) {
     if (!title || !code) throw new Error("Missing title or code");
     tokensOut = msg.usage.output_tokens;
   } catch (e: unknown) {
-    const msg = e instanceof Error ? e.message : "Claude generation failed";
-    return NextResponse.json({ error: msg }, { status: 500 });
+    const detail = e instanceof Error ? e.message : String(e);
+    console.error("[ai/generate] generation error:", detail);
+    const lower = detail.toLowerCase();
+    const isBilling = lower.includes("credit") || lower.includes("billing") || lower.includes("402");
+    if (isBilling) {
+      return NextResponse.json({ error: "AI generation is temporarily unavailable (billing)" }, { status: 402 });
+    }
+    return NextResponse.json({ error: "Diagram generation failed" }, { status: 500 });
   }
 
   // ── Save to DB ────────────────────────────────────────────────────────────

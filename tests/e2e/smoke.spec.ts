@@ -40,7 +40,6 @@ test.describe("Diagrams -- Smoke Tests", () => {
         const benign =
           text.includes("favicon") ||
           text.includes("ERR_ABORTED") ||
-          text.includes("supabase") ||
           text.includes("Failed to load resource") ||
           text.includes("net::ERR");
         if (!benign) errors.push(text);

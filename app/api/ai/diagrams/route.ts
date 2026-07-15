@@ -64,10 +64,10 @@ async function postHandler(req: NextRequest) {
       instruction: "Send a valid JSON body with Content-Type: application/json. The body MUST include \"title\" and \"code\" fields.",
       required_fields: {
         title: "string — A descriptive name for the diagram (e.g. \"User Authentication Flow\")",
-        code: "string — Valid Mermaid syntax for the diagram",
+        code: "string — Valid Mermaid sequenceDiagram syntax (must contain \"sequenceDiagram\")",
       },
       optional_fields: {
-        diagramType: "string — One of: sequence, flowchart, classDiagram, erDiagram, gantt, pie, mindmap, timeline, etc. Defaults to \"sequence\"",
+        diagramType: "string — Only \"sequence\" is supported (this is the default). Any other value returns 400; the code must contain \"sequenceDiagram\".",
       },
       sample_request: {
         body: {

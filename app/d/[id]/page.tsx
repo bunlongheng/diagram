@@ -3,7 +3,6 @@ import { cache } from "react";
 import { headers } from "next/headers";
 import { notFound } from "next/navigation";
 import db from "@/lib/db";
-import { authorizeOwner } from "@/lib/auth-owner";
 import { parse, buildSvg, DEFAULT_OPTS, DEFAULT_LAYOUT } from "@/lib/svg-renderer";
 import type { Opts, Layout } from "@/lib/svg-renderer";
 
@@ -11,11 +10,11 @@ export const revalidate = 300;
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
-type Row = { code: string; settings: { opts?: Partial<Opts>; layout?: Partial<Layout> } | null; title: string | null; created_at: Date | null; is_public: boolean };
+type Row = { code: string; settings: { opts?: Partial<Opts>; layout?: Partial<Layout> } | null; title: string | null; created_at: Date | null };
 
 const getDiagram = cache(async (id: string): Promise<Row | null> => {
   if (!UUID.test(id)) return null;
-  const { rows } = await db.query("SELECT code, settings, title, created_at, is_public FROM diagrams WHERE id = $1", [id]);
+  const { rows } = await db.query("SELECT code, settings, title, created_at FROM diagrams WHERE id = $1", [id]);
   if (!rows.length || !rows[0].code?.trim()) return null;
   return rows[0] as Row;
 });
@@ -28,16 +27,9 @@ function render(row: Row) {
   return { svg: buildSvg(diagram, opts, layout, row.created_at ?? undefined), title: diagram.title || row.title || "Diagram" };
 }
 
-// authorizeOwner() only needs .headers.get() — next/headers() satisfies that.
-async function requestFromHeaders(): Promise<Request> {
-  const h = await headers();
-  return { headers: h } as unknown as Request;
-}
-
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
   const { id } = await params;
-  let row = await getDiagram(id);
-  if (row && !row.is_public && !(await authorizeOwner(await requestFromHeaders()))) row = null;
+  const row = await getDiagram(id);
   const h = await headers();
   const host = h.get("x-forwarded-host") ?? h.get("host") ?? "diagrams-bheng.vercel.app";
   const proto = h.get("x-forwarded-proto") ?? "https";
@@ -57,7 +49,6 @@ export default async function DiagramPage({ params }: { params: Promise<{ id: st
   const { id } = await params;
   const row = await getDiagram(id);
   if (!row) notFound();
-  if (!row.is_public && !(await authorizeOwner(await requestFromHeaders()))) notFound();
   const { svg, title } = render(row);
 
   return (

@@ -38,11 +38,10 @@ test.describe("Editor -- /?new (unauthenticated)", () => {
     page.on("pageerror", (err) => uncaughtErrors.push(err.message));
     await page.goto("/?new", { timeout: 20_000 });
     await page.waitForTimeout(3000);
-    // Filter known benign warnings: supabase network, ResizeObserver,
-    // and the hydration mismatch caused by the viewMode SSR/client branch
+    // Filter known benign warnings: ResizeObserver noise and the hydration
+    // mismatch caused by the viewMode SSR/client branch
     const realErrors = uncaughtErrors.filter(
       (e) =>
-        !e.includes("supabase") &&
         !e.includes("ResizeObserver") &&
         !e.includes("non-passive event listener") &&
         !e.includes("Hydration failed") &&

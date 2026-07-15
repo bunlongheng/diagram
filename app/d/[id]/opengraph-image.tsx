@@ -1,9 +1,7 @@
 import { ImageResponse } from "next/og";
 import { Resvg } from "@resvg/resvg-js";
 import { join } from "node:path";
-import { headers } from "next/headers";
 import db from "@/lib/db";
-import { authorizeOwner } from "@/lib/auth-owner";
 import { parse, buildSvg, DEFAULT_OPTS, DEFAULT_LAYOUT } from "@/lib/svg-renderer";
 import type { Opts, Layout } from "@/lib/svg-renderer";
 
@@ -37,19 +35,15 @@ export default async function Image({ params }: { params: Promise<{ id: string }
   let svg: string | null = null;
   let title = "Diagram";
   if (UUID.test(id)) {
-    const { rows } = await db.query("SELECT code, settings, title, created_at, is_public FROM diagrams WHERE id = $1", [id]);
+    const { rows } = await db.query("SELECT code, settings, title, created_at FROM diagrams WHERE id = $1", [id]);
     if (rows.length && rows[0].code?.trim()) {
-      const { code, settings, title: dbTitle, created_at, is_public } = rows[0];
-      const h = await headers();
-      const authorized = is_public || (await authorizeOwner({ headers: h } as unknown as Request));
-      if (authorized) {
-        const opts: Opts = { ...DEFAULT_OPTS, ...(settings?.opts ?? {}) };
-        const layout: Layout = { ...DEFAULT_LAYOUT, ...(settings?.layout ?? {}) };
-        const diagram = parse(code);
-        if (!diagram.title && dbTitle) diagram.title = dbTitle;
-        title = diagram.title || dbTitle || "Diagram";
-        svg = buildSvg(diagram, opts, layout, created_at ?? undefined);
-      }
+      const { code, settings, title: dbTitle, created_at } = rows[0];
+      const opts: Opts = { ...DEFAULT_OPTS, ...(settings?.opts ?? {}) };
+      const layout: Layout = { ...DEFAULT_LAYOUT, ...(settings?.layout ?? {}) };
+      const diagram = parse(code);
+      if (!diagram.title && dbTitle) diagram.title = dbTitle;
+      title = diagram.title || dbTitle || "Diagram";
+      svg = buildSvg(diagram, opts, layout, created_at ?? undefined);
     }
   }
 

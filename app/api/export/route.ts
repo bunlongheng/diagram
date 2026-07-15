@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import db from "@/lib/db";
-import { authorizeOwner } from "@/lib/auth-owner";
 
-const NO_CORS = {
+const CORS = {
   "Access-Control-Allow-Methods": "GET, OPTIONS",
   "Access-Control-Allow-Headers": "Authorization",
+  "Access-Control-Allow-Origin": "*",
 };
 
 /**
@@ -20,23 +20,16 @@ const NO_CORS = {
  *   theme  — "light" | "dark" | "monokai" (default: uses saved settings or "light")
  */
 export async function GET(req: NextRequest) {
-  if (req.method === "OPTIONS") return new Response(null, { status: 204, headers: NO_CORS });
-
   const id = req.nextUrl.searchParams.get("id");
-  if (!id) return NextResponse.json({ error: "Missing ?id= parameter" }, { status: 400, headers: NO_CORS });
+  if (!id) return NextResponse.json({ error: "Missing ?id= parameter" }, { status: 400, headers: CORS });
   if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)) {
-    return NextResponse.json({ error: "Invalid diagram ID" }, { status: 400, headers: NO_CORS });
+    return NextResponse.json({ error: "Invalid diagram ID" }, { status: 400, headers: CORS });
   }
 
-  const { rows } = await db.query("SELECT code, settings, title, is_public FROM diagrams WHERE id = $1", [id]);
-  if (!rows.length) return NextResponse.json({ error: "Diagram not found" }, { status: 404, headers: NO_CORS });
+  const { rows } = await db.query("SELECT code, settings, title FROM diagrams WHERE id = $1", [id]);
+  if (!rows.length) return NextResponse.json({ error: "Diagram not found" }, { status: 404, headers: CORS });
 
-  const { code, settings, title, is_public } = rows[0];
-  if (!is_public && !(await authorizeOwner(req))) {
-    return NextResponse.json({ error: "Diagram not found" }, { status: 404, headers: NO_CORS });
-  }
-  // Permissive CORS only for public diagrams — owner-only diagrams never get a wildcard origin.
-  const CORS = is_public ? { ...NO_CORS, "Access-Control-Allow-Origin": "*" } : NO_CORS;
+  const { code, settings, title } = rows[0];
   if (!code?.trim()) return NextResponse.json({ error: "Diagram has no code" }, { status: 400, headers: CORS });
 
   // Return the raw Mermaid code + metadata so the caller can render it
@@ -57,5 +50,5 @@ export async function GET(req: NextRequest) {
 }
 
 export async function OPTIONS() {
-  return new Response(null, { status: 204, headers: NO_CORS });
+  return new Response(null, { status: 204, headers: CORS });
 }

@@ -1,3 +1,4 @@
+import crypto from "crypto";
 import { NextRequest, NextResponse } from "next/server";
 import db from "@/lib/db";
 
@@ -29,8 +30,10 @@ export async function GET(
   if (!AI_SECRET) {
     return NextResponse.json({ error: "AI_API_SECRET not configured" }, { status: 500 });
   }
-  const bearer = req.headers.get("authorization")?.replace(/^Bearer\s+/i, "").trim();
-  if (bearer !== AI_SECRET) {
+  const header = req.headers.get("authorization") ?? "";
+  const expected = `Bearer ${AI_SECRET}`;
+  const authorized = header.length === expected.length && crypto.timingSafeEqual(Buffer.from(header), Buffer.from(expected));
+  if (!authorized) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -75,29 +78,11 @@ export async function GET(
   }
 }
 
-// ── Fetch SVG using Node's https module (respects NODE_TLS_REJECT_UNAUTHORIZED) ─
-function fetchSVG(url: string): Promise<string | null> {
-  return new Promise((resolve) => {
-    import("node:https").then(({ default: https }) => {
-      const req = https.get(url, { headers: { "User-Agent": "diagrams-bheng-export/1.0" } }, (res) => {
-        if (res.statusCode !== 200) {
-          console.warn(`[export] mermaid.ink returned ${res.statusCode}`);
-          res.resume();
-          resolve(null);
-          return;
-        }
-        const chunks: Buffer[] = [];
-        res.on("data", (chunk: Buffer) => chunks.push(chunk));
-        res.on("end", () => resolve(Buffer.concat(chunks).toString("utf8")));
-      });
-      req.on("error", (err) => {
-        console.warn(`[export] https.get error: ${err.message}`);
-        resolve(null);
-      });
-      req.setTimeout(15_000, () => {
-        req.destroy();
-        resolve(null);
-      });
-    }).catch(() => resolve(null));
-  });
+async function fetchSVG(url: string): Promise<string | null> {
+  try {
+    const r = await fetch(url, { headers: { "User-Agent": "diagrams-bheng-export/1.0" }, signal: AbortSignal.timeout(15000) });
+    return r.ok ? await r.text() : null;
+  } catch {
+    return null;
+  }
 }
