@@ -128,8 +128,10 @@ Then open http://localhost:3002. On localhost the app runs in owner mode without
 
 ```
 app/
-  page.tsx              # View router + the diagram editor (client)
-  DiagramsShell.tsx     # Auth gate around the index
+  page.tsx              # Server router: SSR index vs the client editor
+  DiagramEditor.tsx     # The diagram editor (client)
+  EditorSettings.tsx    # Settings panel + icon picker (client)
+  DiagramsShell.tsx     # Index shell (hydrates server data)
   DiagramsClient.tsx    # Index grid: cards, tags, AI prompt modal
   MermaidRenderer.tsx   # Dynamic Mermaid.js renderer
   CuteToast.tsx         # Toast system
@@ -145,11 +147,10 @@ lib/
   svg-renderer.ts       # pure parse/buildSvg/detectDiagramType (client + server)
   db.ts                 # pg pool
   auth-owner.ts         # single-owner authorization
-  slugs.ts, is-local.ts # helpers
+  slugs.ts, is-local.ts, diagram-code.ts  # helpers
   fonts/                # Roboto TTFs for resvg OG rendering
 auth.ts                 # NextAuth v5 config
-middleware.ts           # request middleware
-supabase/migrations/    # SQL migrations (schema history)
+db/migrations/          # SQL migrations (schema history)
 tests/                  # Vitest unit + Playwright e2e
 public/                 # icons + static assets
 ```

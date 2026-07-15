@@ -19,7 +19,7 @@ same model as the Stickies app. The diagram data store was already plain Postgre
   email equals the owner. Diagram ownership uses the legacy UUID via `OWNER_USER_ID`.
 
 ## Production cutover checklist
-1. **DB migration** — apply `supabase/migrations/20260524000000_nextauth.sql` to the
+1. **DB migration** — apply `db/migrations/20260524000000_nextauth.sql` to the
    Postgres database (creates `users`, `accounts`, `sessions`, `verification_token`).
    It is `CREATE TABLE IF NOT EXISTS` only — no destructive `ALTER`.
 2. **Env vars** (see `.env.local.example`):
