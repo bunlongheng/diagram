@@ -4,6 +4,7 @@ import Image from "next/image";
 import { signOut as nextAuthSignOut } from "next-auth/react";
 import { CuteToast, showToast } from "@/app/CuteToast";
 import { Bot, Plug, Briefcase, User as UserIcon, FlaskConical, Clipboard, GraduationCap, Lightbulb, Rocket, Star, Heart, Tag, Youtube } from "lucide-react";
+import { relativeTime, buildTagColorMap, TAG_PALETTE } from "@/lib/editor-logic";
 
 // Shape the shell passes in: NextAuth session user mapped to the fields this
 // component reads.
@@ -28,18 +29,6 @@ function loadShared(): Set<string> {
 // ── Helpers ───────────────────────────────────────────────────────────────────
 // Matches the editor's PAL array exactly so minimap colors == rendered diagram colors
 const PALETTE = ["#ef4444","#f97316","#eab308","#22c55e","#14b8a6","#06b6d4","#3b82f6","#8b5cf6","#ec4899","#f43f5e","#84cc16","#0891b2"];
-
-function relativeTime(d: string) {
-  const diff = Date.now() - new Date(d).getTime();
-  const m = Math.floor(diff / 60000);
-  if (m < 1) return "Just now";
-  if (m < 60) return `${m}m ago`;
-  const h = Math.floor(m / 60);
-  if (h < 24) return `${h}h ago`;
-  const day = Math.floor(h / 24);
-  if (day < 7) return `${day}d ago`;
-  return new Date(d).toLocaleDateString("en-US", { month: "short", day: "numeric" });
-}
 
 // ── Diagram minimap ───────────────────────────────────────────────────────────
 function DiagramMinimap({ code, type }: { code: string; type: string }) {
@@ -522,7 +511,7 @@ function AIPromptModal({ onClose, onCreated }: { onClose: () => void; onCreated:
 
   return (
     <div onClick={onClose} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.4)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000, backdropFilter: "blur(8px)" }}>
-      <div onClick={e => e.stopPropagation()} style={{ background: "#ffffff", borderRadius: 20, padding: "32px 32px 28px", width: 520, boxShadow: "0 32px 80px rgba(0,0,0,0.18), 0 0 0 1px rgba(0,0,0,0.06)" }}>
+      <div role="dialog" aria-modal="true" onClick={e => e.stopPropagation()} style={{ background: "#ffffff", borderRadius: 20, padding: "32px 32px 28px", width: 520, boxShadow: "0 32px 80px rgba(0,0,0,0.18), 0 0 0 1px rgba(0,0,0,0.06)" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 20 }}>
           <div style={{ width: 36, height: 36, borderRadius: 10, background: "#1c1e21", display: "flex", alignItems: "center", justifyContent: "center" }}>
             <svg width={18} height={18} viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth={2} strokeLinecap="round"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
@@ -554,40 +543,17 @@ function AIPromptModal({ onClose, onCreated }: { onClose: () => void; onCreated:
 }
 
 // ── Tag colors — 12 unique palettes, assigned by sorted position (no duplicates) ──
-const TAG_PALETTE = [
-  { bg: "#fef2f2", text: "#b91c1c", border: "#fca5a5" }, // red
-  { bg: "#fff7ed", text: "#c2410c", border: "#fdba74" }, // orange
-  { bg: "#fefce8", text: "#a16207", border: "#fde047" }, // yellow
-  { bg: "#f0fdf4", text: "#15803d", border: "#86efac" }, // green
-  { bg: "#ecfdf5", text: "#047857", border: "#6ee7b7" }, // emerald
-  { bg: "#f0fdfa", text: "#0f766e", border: "#5eead4" }, // teal
-  { bg: "#eff6ff", text: "#1d4ed8", border: "#93c5fd" }, // blue
-  { bg: "#eef2ff", text: "#4338ca", border: "#a5b4fc" }, // indigo
-  { bg: "#faf5ff", text: "#7e22ce", border: "#d8b4fe" }, // violet
-  { bg: "#fdf4ff", text: "#a21caf", border: "#f0abfc" }, // fuchsia
-  { bg: "#fff1f2", text: "#be123c", border: "#fda4af" }, // rose
-  { bg: "#f0f9ff", text: "#0369a1", border: "#7dd3fc" }, // sky
-];
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const TAG_ICONS: Record<string, React.ComponentType<any>> = {
   AI: Bot, API: Plug, Work: Briefcase, Personal: UserIcon,
   Research: FlaskConical, Pasted: Clipboard, Learning: GraduationCap,
   Idea: Lightbulb, Project: Rocket, Favorite: Star, Love: Heart, YouTube: Youtube,
 };
-// Tags pinned to a fixed color regardless of sort order (brand identity).
-const TAG_FIXED_COLORS: Record<string, typeof TAG_PALETTE[0]> = {
-  YouTube: { bg: "#fef2f2", text: "#cc0000", border: "#fca5a5" },
-};
 function TagIcon({ tag, size = 10 }: { tag: string; size?: number }) {
   const Icon = TAG_ICONS[tag] ?? Tag;
   return <Icon size={size} strokeWidth={2.5} style={{ flexShrink: 0 }} />;
 }
 
-function buildTagColorMap(tags: string[]): Map<string, typeof TAG_PALETTE[0]> {
-  const map = new Map<string, typeof TAG_PALETTE[0]>();
-  [...tags].sort().forEach((t, i) => map.set(t, TAG_FIXED_COLORS[t] ?? TAG_PALETTE[i % TAG_PALETTE.length]));
-  return map;
-}
 const FALLBACK_TAG_STYLE = { bg: "#f0f1f3", text: "#65676b", border: "#e4e6e8" };
 function tagStyle(tag: string, colorMap?: Map<string, typeof TAG_PALETTE[0]>) {
   return colorMap?.get(tag) ?? TAG_PALETTE[0];
@@ -616,7 +582,7 @@ function TagModal({ diagram, onSave, onClose, tagColorMap, allKnownTags }: { dia
   return (
     <div onClick={onClose} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.25)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000, backdropFilter: "blur(6px)" }}
       onKeyDown={e => { if (e.key === "Enter" && !input.trim()) { e.stopPropagation(); onSave(tags); onClose(); } }}>
-      <div onClick={e => e.stopPropagation()} style={{ background: "#fff", borderRadius: 16, padding: "28px 32px 24px", width: 620, maxWidth: "90vw", boxShadow: "0 24px 64px rgba(0,0,0,0.12)" }}>
+      <div role="dialog" aria-modal="true" onClick={e => e.stopPropagation()} style={{ background: "#fff", borderRadius: 16, padding: "28px 32px 24px", width: 620, maxWidth: "90vw", boxShadow: "0 24px 64px rgba(0,0,0,0.12)" }}>
         <h3 style={{ fontSize: 15, fontWeight: 700, color: "#1c1e21", margin: "0 0 4px" }}>Tags</h3>
         <p style={{ fontSize: 12, color: "#8a8d91", margin: "0 0 18px" }}>{diagram.title}</p>
 
@@ -650,7 +616,7 @@ function TagModal({ diagram, onSave, onClose, tagColorMap, allKnownTags }: { dia
             {tags.map(t => { const s = localColorMap.get(t) ?? TAG_PALETTE[0]; return (
               <span key={t} style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "4px 8px 4px 12px", borderRadius: 20, fontSize: 12, fontWeight: 600, background: s.bg, color: s.text, border: `1.5px solid ${s.border}` }}>
                 {t}
-                <button onClick={() => remove(t)} title={`Remove ${t}`}
+                <button onClick={() => remove(t)} title={`Remove ${t}`} aria-label={`Remove ${t}`}
                   style={{ width: 16, height: 16, borderRadius: "50%", background: s.text, border: "none", cursor: "pointer", color: "#fff", fontSize: 11, padding: 0, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, lineHeight: 1 }}>×</button>
               </span>
             ); })}
@@ -674,7 +640,7 @@ function RenameModal({ title, onSave, onClose }: { title: string; onSave: (t: st
 
   return (
     <div onClick={onClose} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.25)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000, backdropFilter: "blur(6px)" }}>
-      <div onClick={e => e.stopPropagation()} style={{ background: "#ffffff", borderRadius: 16, padding: "28px 28px 24px", width: 440, boxShadow: "0 24px 64px rgba(0,0,0,0.12), 0 0 0 1px rgba(0,0,0,0.05)" }}>
+      <div role="dialog" aria-modal="true" onClick={e => e.stopPropagation()} style={{ background: "#ffffff", borderRadius: 16, padding: "28px 28px 24px", width: 440, boxShadow: "0 24px 64px rgba(0,0,0,0.12), 0 0 0 1px rgba(0,0,0,0.05)" }}>
         <h3 style={{ fontSize: 15, fontWeight: 700, color: "#1c1e21", margin: "0 0 16px" }}>Rename Diagram</h3>
         <input
           ref={inputRef} value={val} onChange={e => setVal(e.target.value)}
@@ -740,7 +706,9 @@ function DiagramCard({ d, isShared, onOpen, onDelete, onShare, onRename, onTag, 
 
       {/* Tags */}
       {tags.length > 0 && (
-        <div style={{ padding: "0 13px 8px", display: "flex", gap: 4, flexWrap: "wrap" }} onClick={e => { e.stopPropagation(); onTag(); }}>
+        <div style={{ padding: "0 13px 8px", display: "flex", gap: 4, flexWrap: "wrap" }} role="button" tabIndex={0} aria-label="Edit tags"
+          onClick={e => { e.stopPropagation(); onTag(); }}
+          onKeyDown={e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.stopPropagation(); onTag(); } }}>
           {tags.map(t => { const s = tagColorMap.get(t) ?? TAG_PALETTE[0]; return (
             <span key={t} style={{ fontSize: 6, fontWeight: 700, padding: "1px 4px 1px 3px", borderRadius: 20, background: s.bg, color: s.text, border: `1px solid ${s.border}`, cursor: "pointer", letterSpacing: "0.02em", lineHeight: 1.4, display: "inline-flex", alignItems: "center", gap: 2 }}><TagIcon tag={t} size={6} />{t}</span>
           ); })}
@@ -757,19 +725,19 @@ function DiagramCard({ d, isShared, onOpen, onDelete, onShare, onRename, onTag, 
       {/* Hover actions */}
       {hovered && (
         <div style={{ position: "absolute", top: 10, right: 10, display: "flex", gap: 4 }} onClick={e => e.stopPropagation()}>
-          <button onClick={onViewCode} title="View code"
+          <button onClick={onViewCode} title="View code" aria-label="View code"
             style={{ width: 26, height: 26, borderRadius: 7, border: "1px solid #e4e6e8", background: "#ffffff", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 1px 4px rgba(0,0,0,0.08)" }}>
             <svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke="#8a8d91" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
               <polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/>
             </svg>
           </button>
-          <button onClick={onTag} title="Tags"
+          <button onClick={onTag} title="Tags" aria-label="Edit tags"
             style={{ width: 26, height: 26, borderRadius: 7, border: "1px solid #e4e6e8", background: "#ffffff", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 1px 4px rgba(0,0,0,0.08)" }}>
             <svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke="#8a8d91" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
               <path d="M12 2H2v10l9.29 9.29a1 1 0 0 0 1.41 0l7.3-7.3a1 1 0 0 0 0-1.41L12 2z"/><circle cx="7" cy="7" r="1.5" fill="#8a8d91"/>
             </svg>
           </button>
-          <button onClick={onDelete} title="Delete" disabled={deleting}
+          <button onClick={onDelete} title="Delete" aria-label="Delete diagram" disabled={deleting}
             style={{ width: 26, height: 26, borderRadius: 7, border: "1px solid #e4e6e8", background: "#ffffff", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 1px 4px rgba(0,0,0,0.08)", opacity: deleting ? 0.5 : 1 }}>
             <svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke="#dc2626" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
               <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/>
@@ -1042,7 +1010,7 @@ export default function DiagramsClient({ user, diagrams: initial }: { user: Shel
 
         {/* Avatar */}
         <div ref={menuRef} style={{ position: "relative" }}>
-          <button onClick={() => setShowMenu(v => !v)}
+          <button onClick={() => setShowMenu(v => !v)} aria-label="Account menu"
             style={{ width: 34, height: 34, borderRadius: "50%", overflow: "hidden", border: showMenu ? "2px solid #1c1e21" : "2px solid #e4e6e8", cursor: "pointer", padding: 0, background: "#e4e6e8", transition: "border-color 0.15s", display: "flex", alignItems: "center", justifyContent: "center", position: "relative" }}>
             <span style={{ fontSize: 13, fontWeight: 700, color: "#1c1e21", userSelect: "none" }}>{name[0]?.toUpperCase()}</span>
             {avatarSrc && <img src={avatarSrc} alt="" referrerPolicy="no-referrer" style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" }} onError={e => { (e.target as HTMLImageElement).style.display = "none"; }} />}
@@ -1115,7 +1083,7 @@ export default function DiagramsClient({ user, diagrams: initial }: { user: Shel
       </main>
 
       {/* ── FAB ── */}
-      <button onClick={() => setShowAIPrompt(true)} title="Generate with AI"
+      <button onClick={() => setShowAIPrompt(true)} title="Generate with AI" aria-label="Generate with AI"
         style={{ position: "fixed", bottom: 32, right: 32, width: 52, height: 52, borderRadius: "50%", background: "#1c1e21", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 4px 20px rgba(0,0,0,0.3)", border: "none", cursor: "pointer", fontSize: 24, color: "#fff", transition: "transform 0.15s, box-shadow 0.15s" }}
         onMouseEnter={e => { e.currentTarget.style.transform = "scale(1.1)"; e.currentTarget.style.boxShadow = "0 6px 28px rgba(0,0,0,0.4)"; }}
         onMouseLeave={e => { e.currentTarget.style.transform = "scale(1)"; e.currentTarget.style.boxShadow = "0 4px 20px rgba(0,0,0,0.3)"; }}
@@ -1134,7 +1102,7 @@ export default function DiagramsClient({ user, diagrams: initial }: { user: Shel
 
       {confirmDeleteId && (
         <div onClick={() => setConfirmDeleteId(null)} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.25)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000, backdropFilter: "blur(6px)" }}>
-          <div onClick={e => e.stopPropagation()} style={{ background: "#ffffff", borderRadius: 16, padding: "28px 28px 24px", width: 380, boxShadow: "0 24px 64px rgba(0,0,0,0.12)" }}>
+          <div role="dialog" aria-modal="true" onClick={e => e.stopPropagation()} style={{ background: "#ffffff", borderRadius: 16, padding: "28px 28px 24px", width: 380, boxShadow: "0 24px 64px rgba(0,0,0,0.12)" }}>
             <h3 style={{ fontSize: 15, fontWeight: 700, color: "#1c1e21", margin: "0 0 8px" }}>Delete diagram?</h3>
             <p style={{ fontSize: 13, color: "#65676b", margin: "0 0 24px", lineHeight: 1.5 }}>This can&apos;t be undone.</p>
             <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
@@ -1147,10 +1115,10 @@ export default function DiagramsClient({ user, diagrams: initial }: { user: Shel
 
       {showDocs && (
         <div onClick={() => setShowDocs(false)} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.25)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000, backdropFilter: "blur(6px)" }}>
-          <div onClick={e => e.stopPropagation()} style={{ background: "#ffffff", borderRadius: 16, padding: "28px 32px", width: 560, maxHeight: "80vh", overflowY: "auto", boxShadow: "0 24px 64px rgba(0,0,0,0.12)" }}>
+          <div role="dialog" aria-modal="true" onClick={e => e.stopPropagation()} style={{ background: "#ffffff", borderRadius: 16, padding: "28px 32px", width: 560, maxHeight: "80vh", overflowY: "auto", boxShadow: "0 24px 64px rgba(0,0,0,0.12)" }}>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20 }}>
               <h2 style={{ fontSize: 15, fontWeight: 700, color: "#1c1e21", margin: 0 }}>Import Formats</h2>
-              <button onClick={() => setShowDocs(false)} style={{ background: "none", border: "none", color: "#8a8d91", cursor: "pointer", fontSize: 18, lineHeight: 1 }}>✕</button>
+              <button onClick={() => setShowDocs(false)} aria-label="Close" style={{ background: "none", border: "none", color: "#8a8d91", cursor: "pointer", fontSize: 18, lineHeight: 1 }}>✕</button>
             </div>
             <p style={{ fontSize: 12, color: "#65676b", margin: "0 0 20px", lineHeight: 1.6 }}>Three ways to create a diagram. All sequence diagrams auto-save on paste; use <kbd style={{ background: "#f4f5f7", border: "1px solid #e4e6e8", borderRadius: 4, padding: "1px 6px", fontSize: 11, color: "#1c1e21" }}>⌘S</kbd> to save edits.</p>
             {[
@@ -1179,7 +1147,7 @@ export default function DiagramsClient({ user, diagrams: initial }: { user: Shel
       {/* ── Code slide-in panel (from left) ── */}
       {codeDiagram && (
         <div onClick={() => { setCodeDiagram(null); setCodeCopied(false); }} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.25)", zIndex: 1000, backdropFilter: "blur(4px)" }}>
-          <div onClick={e => e.stopPropagation()} style={{
+          <div role="dialog" aria-modal="true" onClick={e => e.stopPropagation()} style={{
             position: "absolute", left: 0, top: 0, bottom: 0, width: 420, maxWidth: "90vw",
             background: "#ffffff", boxShadow: "8px 0 32px rgba(0,0,0,0.12)",
             display: "flex", flexDirection: "column",
@@ -1195,7 +1163,7 @@ export default function DiagramsClient({ user, diagrams: initial }: { user: Shel
                 onClick={() => { navigator.clipboard.writeText(codeDiagram.code); setCodeCopied(true); setTimeout(() => setCodeCopied(false), 2000); }}
                 style={{ background: codeCopied ? "#22c55e" : "#f4f5f7", border: "1px solid #e4e6e8", borderRadius: 6, padding: "4px 12px", fontSize: 11, fontWeight: 600, color: codeCopied ? "#fff" : "#65676b", cursor: "pointer", transition: "all 0.15s", flexShrink: 0 }}
               >{codeCopied ? "Copied!" : "Copy"}</button>
-              <button onClick={() => { setCodeDiagram(null); setCodeCopied(false); }} style={{ background: "none", border: "none", color: "#8a8d91", cursor: "pointer", fontSize: 18, lineHeight: 1, flexShrink: 0 }}>✕</button>
+              <button onClick={() => { setCodeDiagram(null); setCodeCopied(false); }} aria-label="Close" style={{ background: "none", border: "none", color: "#8a8d91", cursor: "pointer", fontSize: 18, lineHeight: 1, flexShrink: 0 }}>✕</button>
             </div>
             {/* Code */}
             <div style={{ flex: 1, overflow: "auto", padding: 0 }}>

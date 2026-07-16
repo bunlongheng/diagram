@@ -158,7 +158,9 @@ export function SettingsContent({
                         <div style={{ display: "flex", flexDirection: "column", gap: mobile ? 10 : 7 }}>
                             {([ ["coloredLines","Line Colors"], ["coloredNumbers","Numbers"], ["coloredText","Text Pill"], ["showNotes","Notes"] ] as const).map(([k, label]) => (
                                 <div key={k} className="flex items-center justify-between cursor-pointer select-none"
-                                    onClick={() => upd({ [k]: !opts[k] } as Partial<Opts>)}>
+                                    role="button" tabIndex={0} aria-label={`Toggle ${label}`} aria-pressed={!!opts[k]}
+                                    onClick={() => upd({ [k]: !opts[k] } as Partial<Opts>)}
+                                    onKeyDown={e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); upd({ [k]: !opts[k] } as Partial<Opts>); } }}>
                                     <span style={{ fontSize: fs(11), color: ut.bodyText, fontWeight: 400 }}>{label}</span>
                                     <div style={{ position: "relative", width: 34, height: 20, borderRadius: 10, flexShrink: 0, background: opts[k] ? ut.toggleOn : ut.tabBarBg, transition: "background 0.2s", cursor: "pointer" }}>
                                         <div style={{ position: "absolute", top: 2, width: 16, height: 16, borderRadius: 8, background: "white", left: opts[k] ? 16 : 2, transition: "left 0.2s ease", boxShadow: "0 1px 4px rgba(0,0,0,0.4)" }} />
@@ -173,7 +175,10 @@ export function SettingsContent({
                     <div>
                         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 7 }}>
                             <div style={{ fontSize: fs(9), fontWeight: 700, color: ut.sectionLabel, textTransform: "uppercase", letterSpacing: "0.1em" }}>Layout</div>
-                            <div style={{ display: "flex", alignItems: "center", gap: 6, cursor: "pointer" }} onClick={() => upd({ autoLayout: !opts.autoLayout })}>
+                            <div style={{ display: "flex", alignItems: "center", gap: 6, cursor: "pointer" }}
+                                role="button" tabIndex={0} aria-label="Toggle auto layout" aria-pressed={!!opts.autoLayout}
+                                onClick={() => upd({ autoLayout: !opts.autoLayout })}
+                                onKeyDown={e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); upd({ autoLayout: !opts.autoLayout }); } }}>
                                 <span style={{ fontSize: fs(10), fontWeight: 600, color: opts.autoLayout ? ut.toggleOn : ut.sectionLabel, transition: "color 0.15s" }}>Auto</span>
                                 <div style={{ position: "relative", width: 32, height: 18, borderRadius: 9, background: opts.autoLayout ? ut.toggleOn : ut.panelBorder, transition: "background 0.2s" }}>
                                     <div style={{ position: "absolute", top: 2, left: opts.autoLayout ? 16 : 2, width: 14, height: 14, borderRadius: 7, background: "white", transition: "left 0.2s", boxShadow: "0 1px 3px rgba(0,0,0,0.3)" }} />
@@ -197,7 +202,9 @@ export function SettingsContent({
                 {/* QR code → click to copy prod link */}
                 {viewUrl && <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 10 }}>
                     <div
+                        role="button" tabIndex={0} aria-label="Copy view link"
                         onClick={() => { navigator.clipboard.writeText(viewUrl).catch(() => {}); showToast("Link copied!", { color: "#7c3aed" }); }}
+                        onKeyDown={e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); navigator.clipboard.writeText(viewUrl).catch(() => {}); showToast("Link copied!", { color: "#7c3aed" }); } }}
                         style={{ background: "#ffffff", borderRadius: 12, padding: 10, display: "inline-flex", cursor: "pointer" }}
                         title="Click to copy link"
                     >
@@ -429,6 +436,7 @@ function IconPicker({ value, color, ut, onChange }: { value: string; color: stri
                 ref={btnRef}
                 onClick={handleOpen}
                 title={value}
+                aria-label={`Change icon (current: ${value})`}
                 style={{ width: 36, height: "100%", borderRadius: 0, background: "#ffffff", border: "none", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", flexShrink: 0 }}
             >
                 <IconSvg iconKey={value} size={18} color={color} />

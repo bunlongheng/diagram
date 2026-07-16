@@ -15,6 +15,7 @@ import {
 } from "@/lib/svg-renderer";
 import type { Participant, Arrow, SeqMsg, SeqNote, Diagram, Opts, Layout } from "@/lib/svg-renderer";
 import { SettingsContent, UI_THEMES, type UiTheme } from "./EditorSettings";
+import { extractTitle, zoomStep, pushUndo } from "@/lib/editor-logic";
 
 // ── Sequence diagram Prism grammar ────────────────────────────────────────────
 Prism.languages.sequence = {
@@ -34,14 +35,6 @@ function highlight(code: string) {
 // Types, constants, parse(), buildSvg(), icon system are imported from
 // @/lib/svg-renderer above so the editor and server-side rendering share
 // a single source of truth.
-
-function extractTitle(code: string): string {
-    const m = code.match(/^\s*(?:title|accTitle):?\s+(.+)$/im);
-    if (m) return m[1].trim();
-    const type = detectDiagramType(code);
-    if (type === "diagram" || type === "sequence") return "Untitled";
-    return type.charAt(0).toUpperCase() + type.slice(1) + " Diagram";
-}
 
 // ── Default Code ──────────────────────────────────────────────────────────────
 const DEFAULT_CODE = `sequenceDiagram
@@ -584,8 +577,8 @@ export default function DiagramEditor() {
             if (tag === "TEXTAREA" || tag === "INPUT") return;
             if (mod && e.key === "0") { e.preventDefault(); fitZoom(); }
             if (mod && e.key === "z" && !e.shiftKey) { const prev = undoStack.current.pop(); if (prev) { e.preventDefault(); setOpts(prev); } }
-            if (mod && (e.key === "=" || e.key === "+")) { e.preventDefault(); const nz = parseFloat(Math.min(4, zoomRef.current * 1.2).toFixed(2)); zoomRef.current = nz; applyTransform(panRef.current, nz); setZoom(nz); setFitActive(false); flashZoomHud(nz); }
-            if (mod && e.key === "-") { e.preventDefault(); const nz = parseFloat(Math.max(0.1, zoomRef.current / 1.2).toFixed(2)); zoomRef.current = nz; applyTransform(panRef.current, nz); setZoom(nz); setFitActive(false); flashZoomHud(nz); }
+            if (mod && (e.key === "=" || e.key === "+")) { e.preventDefault(); const nz = zoomStep(zoomRef.current, "in"); zoomRef.current = nz; applyTransform(panRef.current, nz); setZoom(nz); setFitActive(false); flashZoomHud(nz); }
+            if (mod && e.key === "-") { e.preventDefault(); const nz = zoomStep(zoomRef.current, "out"); zoomRef.current = nz; applyTransform(panRef.current, nz); setZoom(nz); setFitActive(false); flashZoomHud(nz); }
             if (e.key === "f" || e.key === "F") fitZoom();
             if (e.key === " " && !e.repeat) { e.preventDefault(); spaceHeld.current = true; }
         };
@@ -609,8 +602,7 @@ export default function DiagramEditor() {
     }, [savedDiagramId, ownerUser]);
 
     const upd = (p: Partial<Opts>) => setOpts(o => {
-        undoStack.current.push(o);
-        if (undoStack.current.length > 50) undoStack.current.shift();
+        pushUndo(undoStack.current, o);
         const next = { ...o, ...p };
         saveSettings(next, layout);
         return next;
@@ -1282,6 +1274,7 @@ No explanation, no markdown, just the JSON object.`,
                 {/* Back — ideas-style floating pill */}
                 <button
                     onClick={goBack}
+                    aria-label="Back to diagrams"
                     style={{
                         width: 36, height: 36, borderRadius: 10, flexShrink: 0,
                         border: `1px solid ${ut.headerBorder}`,
@@ -1307,7 +1300,7 @@ No explanation, no markdown, just the JSON object.`,
                     padding: "4px 6px",
                 }}>
                     {/* Code */}
-                    <button onClick={() => { setShowCode(v => !v); if (showSettings) setShowSettings(false); }} style={{
+                    <button onClick={() => { setShowCode(v => !v); if (showSettings) setShowSettings(false); }} aria-label="Code" style={{
                         display: "flex", alignItems: "center", gap: 6,
                         padding: "0 10px", height: 30, borderRadius: 8, border: "none",
                         background: showCode ? (opts.theme === "light" ? "#f1f5f9" : ut.activeTab) : "transparent",
@@ -1350,6 +1343,7 @@ No explanation, no markdown, just the JSON object.`,
                                 onMouseEnter={e => { if (!isSharedDiagram) e.currentTarget.style.background = opts.theme === "light" ? "#f1f5f9" : ut.activeTab; }}
                                 onMouseLeave={e => { if (!isSharedDiagram) e.currentTarget.style.background = "transparent"; }}
                                 title={isSharedDiagram ? "Click to preview + copy link" : "Share — make public"}
+                                aria-label={isSharedDiagram ? "Public" : "Share"}
                             >
                                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
                                 {!isMobile && (isSharedDiagram ? "Public" : "Share")}
@@ -1366,6 +1360,7 @@ No explanation, no markdown, just the JSON object.`,
                                     cursor: "pointer", fontSize: 12, transition: "all 0.1s", paddingLeft: 0,
                                 }}
                                     title="Make private"
+                                    aria-label="Make private"
                                     onMouseEnter={e => (e.currentTarget.style.background = "rgba(239,68,68,0.15)", e.currentTarget.style.color = "#f87171")}
                                     onMouseLeave={e => (e.currentTarget.style.background = "rgba(124,58,237,0.15)", e.currentTarget.style.color = "#a78bfa")}
                                 >✕</button>
@@ -1377,7 +1372,7 @@ No explanation, no markdown, just the JSON object.`,
                     <div style={{ width: 1, height: 18, background: ut.headerBorder, flexShrink: 0, margin: "0 2px" }} />
 
                     {/* Play */}
-                    <button onClick={enterPresenter} style={{
+                    <button onClick={enterPresenter} aria-label="Play" style={{
                         display: "flex", alignItems: "center", gap: 6,
                         padding: "0 10px", height: 30, borderRadius: 8, border: "none",
                         background: "transparent", color: "#64748b",
@@ -1394,7 +1389,7 @@ No explanation, no markdown, just the JSON object.`,
                     <div style={{ width: 1, height: 18, background: ut.headerBorder, flexShrink: 0, margin: "0 2px" }} />
 
                     {/* Format */}
-                    <button onClick={() => { setShowSettings(v => !v); if (showCode && isMobile) setShowCode(false); }} style={{
+                    <button onClick={() => { setShowSettings(v => !v); if (showCode && isMobile) setShowCode(false); }} aria-label="Format" style={{
                         display: "flex", alignItems: "center", gap: 6,
                         padding: "0 10px", height: 30, borderRadius: 8, border: "none",
                         background: showSettings ? (opts.theme === "light" ? "#f1f5f9" : ut.activeTab) : "transparent",
@@ -1581,7 +1576,7 @@ No explanation, no markdown, just the JSON object.`,
             {/* ── Mobile: Code editor bottom sheet ── */}
             {isMobile && showCode && (
                 <div className="fixed inset-0 z-50" style={{ background: "rgba(0,0,0,0.45)" }} onClick={() => setShowCode(false)}>
-                <div className="absolute bottom-0 left-0 right-0 flex flex-col rounded-t-2xl overflow-hidden" style={{ background: ut.codeBg, maxHeight: "92vh" }} onClick={e => e.stopPropagation()}>
+                <div role="dialog" aria-modal="true" className="absolute bottom-0 left-0 right-0 flex flex-col rounded-t-2xl overflow-hidden" style={{ background: ut.codeBg, maxHeight: "92vh" }} onClick={e => e.stopPropagation()}>
                     <div className="flex items-center justify-between px-4 shrink-0"
                         style={{ height: 54, background: ut.codeHeaderBg, borderBottom: `1px solid ${ut.codeBorder}` }}>
                         <span style={{ fontSize: 11, fontWeight: 700, color: ut.zoomMuted, textTransform: "uppercase", letterSpacing: "0.1em" }}>
@@ -1594,6 +1589,7 @@ No explanation, no markdown, just the JSON object.`,
                             >{copied ? "Copied!" : "Copy"}</button>
                             <button
                                 onClick={() => setShowCode(false)}
+                                aria-label="Close code editor"
                                 className="w-9 h-9 rounded-full flex items-center justify-center"
                                 style={{ background: ut.activeTab, color: ut.zoomMuted }}>
                                 <X size={16} strokeWidth={2.5} />
@@ -1637,6 +1633,8 @@ No explanation, no markdown, just the JSON object.`,
                     onClick={() => setShowSettings(false)}
                 >
                     <div
+                        role="dialog"
+                        aria-modal="true"
                         className="absolute bottom-0 left-0 right-0 flex flex-col rounded-t-2xl overflow-hidden"
                         style={{ background: ut.panelBg, maxHeight: "84vh" }}
                         onClick={e => e.stopPropagation()}
