@@ -2,17 +2,17 @@ import { NextRequest, NextResponse } from "next/server";
 import db from "@/lib/db";
 
 const CORS = {
-  "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Methods": "GET, OPTIONS",
   "Access-Control-Allow-Headers": "Authorization",
+  "Access-Control-Allow-Origin": "*",
 };
 
 /**
  * GET /api/export?id=<diagram-id>&format=svg
  *
- * Returns the raw SVG of a diagram for embedding in slides, docs, etc.
- * The SVG is generated server-side from the stored Mermaid code using
- * the same buildSvg renderer as the frontend.
+ * Returns the stored Mermaid code + settings JSON for a diagram (not raw
+ * SVG — the caller renders it, e.g. via the /d/[id] public route or the
+ * editor's export button).
  *
  * Query params:
  *   id     — diagram UUID (required)
@@ -20,8 +20,6 @@ const CORS = {
  *   theme  — "light" | "dark" | "monokai" (default: uses saved settings or "light")
  */
 export async function GET(req: NextRequest) {
-  if (req.method === "OPTIONS") return new Response(null, { status: 204, headers: CORS });
-
   const id = req.nextUrl.searchParams.get("id");
   if (!id) return NextResponse.json({ error: "Missing ?id= parameter" }, { status: 400, headers: CORS });
   if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)) {

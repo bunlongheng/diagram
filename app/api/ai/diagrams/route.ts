@@ -1,7 +1,9 @@
+import crypto from "crypto";
 import { NextRequest, NextResponse } from "next/server";
-import { createAdminClient } from "@/lib/supabase/server";
+import { ownerId } from "@/lib/auth-owner";
 import db from "@/lib/db";
 import { uniqueDiagramSlug } from "@/lib/slugs";
+import { embedTitleInCode } from "@/lib/diagram-code";
 
 const AI_SECRET = process.env.AI_API_SECRET;
 
@@ -37,7 +39,7 @@ export async function POST(req: NextRequest) {
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : String(err);
     console.error("[ai/diagrams] unhandled error:", msg);
-    return NextResponse.json({ error: "Internal error", detail: msg }, { status: 500 });
+    return NextResponse.json({ error: "Internal error" }, { status: 500 });
   }
 }
 
@@ -46,8 +48,10 @@ async function postHandler(req: NextRequest) {
   if (!AI_SECRET) {
     return NextResponse.json({ error: "AI_API_SECRET not configured" }, { status: 500 });
   }
-  const bearer = req.headers.get("authorization")?.replace(/^Bearer\s+/i, "").trim();
-  if (bearer !== AI_SECRET) {
+  const header = req.headers.get("authorization") ?? "";
+  const expected = `Bearer ${AI_SECRET}`;
+  const authorized = header.length === expected.length && crypto.timingSafeEqual(Buffer.from(header), Buffer.from(expected));
+  if (!authorized) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -61,10 +65,10 @@ async function postHandler(req: NextRequest) {
       instruction: "Send a valid JSON body with Content-Type: application/json. The body MUST include \"title\" and \"code\" fields.",
       required_fields: {
         title: "string — A descriptive name for the diagram (e.g. \"User Authentication Flow\")",
-        code: "string — Valid Mermaid syntax for the diagram",
+        code: "string — Valid Mermaid sequenceDiagram syntax (must contain \"sequenceDiagram\")",
       },
       optional_fields: {
-        diagramType: "string — One of: sequence, flowchart, classDiagram, erDiagram, gantt, pie, mindmap, timeline, etc. Defaults to \"sequence\"",
+        diagramType: "string — Only \"sequence\" is supported (this is the default). Any other value returns 400; the code must contain \"sequenceDiagram\".",
       },
       sample_request: {
         body: {
@@ -132,34 +136,17 @@ async function postHandler(req: NextRequest) {
     },
   }, { status: 400 });
 
-  // ── Resolve owner user_id ──────────────────────────────────────────────────
-  // OWNER_USER_ID env var bypasses Supabase admin lookup (required for local dev
-  // since undici inside Next.js 15 ignores NODE_TLS_REJECT_UNAUTHORIZED=0)
-  let ownerId = process.env.OWNER_USER_ID ?? null;
-  if (!ownerId) {
-    const ownerEmail = process.env.ALLOWED_EMAIL;
-    if (!ownerEmail) {
-      return NextResponse.json({ error: "OWNER_USER_ID or ALLOWED_EMAIL not configured" }, { status: 500 });
-    }
-    const admin = createAdminClient();
-    const { data: users, error: userErr } = await admin.auth.admin.listUsers();
-    if (userErr) return NextResponse.json({ error: userErr.message }, { status: 500 });
-    const owner = users.users.find(u => u.email === ownerEmail);
-    if (!owner) return NextResponse.json({ error: "Owner not found" }, { status: 500 });
-    ownerId = owner.id;
+  // ── Resolve owner user_id (legacy owner UUID via OWNER_USER_ID) ─────────
+  const ownerUserId = ownerId();
+  if (!ownerUserId) {
+    return NextResponse.json({ error: "OWNER_USER_ID not configured" }, { status: 500 });
   }
 
   // ── Unique slug ───────────────────────────────────────────────────────────
-  const slug = await uniqueDiagramSlug(ownerId, title);
+  const slug = await uniqueDiagramSlug(ownerUserId, title);
 
   // ── Ensure title is embedded in the code ────────────────────────────────
-  let finalCode = code.trim();
-  if (!/^title:?\s+.+$/im.test(finalCode)) {
-    finalCode = finalCode.replace(
-      /^(sequenceDiagram[^\n]*\n?)/im,
-      `$1    title: ${title.trim()}\n`
-    );
-  }
+  const finalCode = embedTitleInCode(code, title);
 
   // ── Insert ────────────────────────────────────────────────────────────────
   // vPad: 50 gives breathing room between pills so API-rendered SVGs never
@@ -176,7 +163,7 @@ async function postHandler(req: NextRequest) {
 
   const { rows } = await db.query(
     "INSERT INTO diagrams (user_id, title, slug, code, diagram_type, tags, settings) VALUES ($1, $2, $3, $4, $5, $6::text[], $7) RETURNING *",
-    [ownerId, title.trim(), slug, finalCode, diagramType, ["API"], JSON.stringify(settings)]
+    [ownerUserId, title.trim(), slug, finalCode, diagramType, ["API"], JSON.stringify(settings)]
   );
 
   if (rows.length === 0) return NextResponse.json({ error: "Insert failed" }, { status: 500 });

@@ -20,7 +20,8 @@ export default function MermaidRenderer({ code, dark = false, onDims }: Props) {
 
       mermaid.initialize({
         startOnLoad: false,
-        securityLevel: "loose",
+        // strict: encodes HTML in labels, disables click handlers - avoids an XSS foothold
+        securityLevel: "strict",
         fontFamily: "Inter, system-ui, sans-serif",
         theme: "base",
         themeVariables: dark ? {

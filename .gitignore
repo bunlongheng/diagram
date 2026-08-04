@@ -5,6 +5,8 @@ node_modules/
 
 # testing
 coverage/
+test-results/
+playwright-report/
 
 # next.js
 .next/
@@ -27,11 +29,14 @@ yarn-error.log*
 # vercel
 .vercel
 
-# netlify
-.netlify/
+# supabase CLI local state (dropped after the NextAuth migration)
+supabase/.temp/
 
 # build artifacts
 tsconfig.tsbuildinfo
 smoke-test.mjs
-package-lock.json
 .env*.local
+
+# repo-audit artifacts
+audit-report.html
+docs/screenshots/
