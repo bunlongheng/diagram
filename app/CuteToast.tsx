@@ -83,7 +83,7 @@ export function CuteToast() {
         );
       })}
 
-      <div key={toast.id} style={{
+      <div key={toast.id} role="status" aria-live={toast.color === '#ef4444' ? 'assertive' : 'polite'} style={{
         position: 'fixed', left: '50%', top: 8, zIndex: 100002,
         pointerEvents: 'none',
         animation: 'cuteToastInOut 5s cubic-bezier(0.16, 1, 0.3, 1) forwards',
@@ -104,8 +104,8 @@ export function CuteToast() {
             <Bot size={12} strokeWidth={2} color="#fff" />
           </span>
           <span style={{
-            fontFamily: 'Inter, system-ui, sans-serif',
-            fontSize: 8, fontWeight: 900, letterSpacing: '0.08em',
+            fontFamily: 'var(--font-roboto), system-ui, sans-serif',
+            fontSize: 12, fontWeight: 900, letterSpacing: '0.08em',
             textTransform: 'uppercase', lineHeight: 1, whiteSpace: 'nowrap',
           }}>
             {toast.msg}

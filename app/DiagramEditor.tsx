@@ -52,7 +52,7 @@ export default function DiagramEditor() {
     // The index is a server-rendered route, so leaving the editor is a plain
     // navigation back to it.
     const goBack = () => { window.location.href = "/"; };
-    const [ownerUser, setOwnerUser] = useState<{ id: string; email?: string; user_metadata?: Record<string,string> } | null>(null);
+    const [isOwner, setIsOwner] = useState(false);
     const [mounted, setMounted] = useState(false);
     const [isMobile, setIsMobile] = useState(false);
     const [code, setCode] = useState("");
@@ -131,14 +131,14 @@ export default function DiagramEditor() {
             if (titleEl) titleEl.textContent = t;
         }
         showToast(`Title saved`, { color: "#7c3aed" });
-        if (savedDiagramId && ownerUser) {
+        if (savedDiagramId && isOwner) {
             fetch(`/api/diagrams/${savedDiagramId}`, {
                 method: "PATCH",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ title: t, code: newCode }),
             }).then(r => { if (!r.ok) r.json().then(e => showToast(`Save failed: ${e.error}`, { color: "#ef4444" })).catch(() => {}); });
         }
-    }, [code, savedDiagramId, ownerUser, svgWrapRef]);
+    }, [code, savedDiagramId, isOwner, svgWrapRef]);
 
 
     const clampPan = useCallback((p: { x: number; y: number }): { x: number; y: number } => {
@@ -380,7 +380,7 @@ export default function DiagramEditor() {
         // editor; otherwise presenter mode. Reflects the server gate.
         fetch("/api/auth/me").then(r => r.json()).then(({ authorized }) => {
             if (authorized) {
-                setOwnerUser({ id: "owner" });
+                setIsOwner(true);
                 if (pendingTitleToastRef.current) {
                     const t = pendingTitleToastRef.current;
                     pendingTitleToastRef.current = null;
@@ -593,13 +593,13 @@ export default function DiagramEditor() {
     const undoStack = useRef<Opts[]>([]);
     const saveDiagramRef = useRef<(() => void) | null>(null);
     const saveSettings = useCallback((newOpts: Opts, newLayout: Layout) => {
-        if (!savedDiagramId || !ownerUser) return;
+        if (!savedDiagramId || !isOwner) return;
         fetch(`/api/diagrams/${savedDiagramId}`, {
             method: "PATCH",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ settings: { opts: newOpts, layout: newLayout } }),
         }).catch(() => {});
-    }, [savedDiagramId, ownerUser]);
+    }, [savedDiagramId, isOwner]);
 
     const upd = (p: Partial<Opts>) => setOpts(o => {
         pushUndo(undoStack.current, o);
@@ -712,7 +712,7 @@ No explanation, no markdown, just the JSON object.`,
     }, [code]);
 
     const saveDiagram = useCallback(async (codeToSave?: string) => {
-        if (!ownerUser) return;
+        if (!isOwner) return;
         const c = codeToSave ?? code;
         if (!c.trim()) return; // don't save empty/placeholder
         const title = extractTitle(c);
@@ -739,7 +739,7 @@ No explanation, no markdown, just the JSON object.`,
             const msg = e instanceof Error ? e.message : String(e);
             showToast(`Save failed: ${msg}`, { color: "#ef4444" });
         }
-    }, [ownerUser, code]);
+    }, [isOwner, code]);
 
     // Keep ref in sync so keydown handler (stale closure) can call latest saveDiagram
     useEffect(() => { saveDiagramRef.current = () => saveDiagram(); }, [saveDiagram]);
@@ -747,7 +747,7 @@ No explanation, no markdown, just the JSON object.`,
     // ── Autosave on code change (update existing record) ──────────────────
     const autoSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
     useEffect(() => {
-        if (!ownerUser || !savedDiagramId || !code.trim()) return;
+        if (!isOwner || !savedDiagramId || !code.trim()) return;
         if (autoSaveTimer.current) clearTimeout(autoSaveTimer.current);
         autoSaveTimer.current = setTimeout(() => {
             fetch(`/api/diagrams/${savedDiagramId}`, {
@@ -757,7 +757,7 @@ No explanation, no markdown, just the JSON object.`,
             }).catch(() => {});
         }, 1500);
         return () => { if (autoSaveTimer.current) clearTimeout(autoSaveTimer.current); };
-    }, [code, savedDiagramId, ownerUser]);
+    }, [code, savedDiagramId, isOwner]);
 
     const PROD_URL = "https://diagrams-bheng.vercel.app";
     const buildShareUrl = useCallback(() => {
@@ -805,6 +805,7 @@ No explanation, no markdown, just the JSON object.`,
     }, [buildShareUrl]);
 
     const fireConfetti = useCallback(() => {
+        if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
         import("canvas-confetti").then(({ default: confetti }) => {
             const end = Date.now() + 1500;
             const colors = ["#ff595e","#ffca3a","#22c55e","#1982c4","#8ac926","#ff924c","#48cae4","#f97316"];
@@ -852,11 +853,11 @@ No explanation, no markdown, just the JSON object.`,
             setTimeout(fireConfetti, 150);
             setTimeout(fitZoom, 120);
             // Always save as a NEW record
-            if (ownerUser) setTimeout(() => saveDiagram(pasted), 300);
+            if (isOwner) setTimeout(() => saveDiagram(pasted), 300);
         };
         document.addEventListener("paste", onGlobalPaste, true);
         return () => document.removeEventListener("paste", onGlobalPaste, true);
-    }, [fireConfetti, fitZoom, ownerUser, saveDiagram]);
+    }, [fireConfetti, fitZoom, isOwner, saveDiagram]);
 
     const ut = UI_THEMES[opts.theme] ?? UI_THEMES.light;
 
@@ -932,7 +933,7 @@ No explanation, no markdown, just the JSON object.`,
         return (
             <div
                 ref={canvasRef}
-                style={{ position: "relative", width: "100svw", height: "100svh", overflow: "hidden", background: "#e8eaf0", fontFamily: "Inter, sans-serif", cursor: isMobile ? "default" : "crosshair", touchAction: "none", userSelect: "none" }}
+                style={{ position: "relative", width: "100svw", height: "100svh", overflow: "hidden", background: "#e8eaf0", fontFamily: "var(--font-roboto), sans-serif", cursor: isMobile ? "default" : "crosshair", touchAction: "none", userSelect: "none" }}
                 onMouseMove={e => {
                     const rect = canvasRef.current!.getBoundingClientRect();
                     // Spotlight: update gradient center directly — no React re-render
@@ -1051,7 +1052,7 @@ No explanation, no markdown, just the JSON object.`,
     }
 
     return (
-        <div className="h-screen w-screen flex flex-col overflow-hidden" style={{ fontFamily: "Inter, sans-serif" }}>
+        <div className="h-screen w-screen flex flex-col overflow-hidden" style={{ fontFamily: "var(--font-roboto), sans-serif" }}>
             <CuteToast />
 
             {/* ── Diagram loading overlay ── */}
@@ -1167,15 +1168,15 @@ No explanation, no markdown, just the JSON object.`,
                         {/* ─ participant boxes top ─ */}
                         <g style={{ transformOrigin: "50px 14px", animation: "sdB1 2.5s cubic-bezier(0.34,1.56,0.64,1) infinite" }}>
                             <rect x={10} y={1} width={80} height={26} rx={7} fill="#fb7185"/>
-                            <text x={50} y={14} textAnchor="middle" dominantBaseline="middle" fontFamily="Inter,system-ui,sans-serif" fontSize={9} fontWeight={700} fill="white">Client</text>
+                            <text x={50} y={14} textAnchor="middle" dominantBaseline="middle" fontFamily="var(--font-roboto),system-ui,sans-serif" fontSize={9} fontWeight={700} fill="white">Client</text>
                         </g>
                         <g style={{ transformOrigin: "150px 14px", animation: "sdB2 2.5s cubic-bezier(0.34,1.56,0.64,1) infinite" }}>
                             <rect x={110} y={1} width={80} height={26} rx={7} fill="#a78bfa"/>
-                            <text x={150} y={14} textAnchor="middle" dominantBaseline="middle" fontFamily="Inter,system-ui,sans-serif" fontSize={9} fontWeight={700} fill="white">API</text>
+                            <text x={150} y={14} textAnchor="middle" dominantBaseline="middle" fontFamily="var(--font-roboto),system-ui,sans-serif" fontSize={9} fontWeight={700} fill="white">API</text>
                         </g>
                         <g style={{ transformOrigin: "250px 14px", animation: "sdB3 2.5s cubic-bezier(0.34,1.56,0.64,1) infinite" }}>
                             <rect x={210} y={1} width={80} height={26} rx={7} fill="#34d399"/>
-                            <text x={250} y={14} textAnchor="middle" dominantBaseline="middle" fontFamily="Inter,system-ui,sans-serif" fontSize={9} fontWeight={700} fill="white">DB</text>
+                            <text x={250} y={14} textAnchor="middle" dominantBaseline="middle" fontFamily="var(--font-roboto),system-ui,sans-serif" fontSize={9} fontWeight={700} fill="white">DB</text>
                         </g>
 
                         {/* ─ lifelines ─ */}
@@ -1188,7 +1189,7 @@ No explanation, no markdown, just the JSON object.`,
                         <polygon points="144,65 134,60 134,70" fill="#fbbf24" style={{ animation: "sdP1 2.5s ease-out infinite", transformOrigin: "144px 65px" }}/>
                         <g style={{ transformOrigin: "95px 65px", animation: "sdP1 2.5s cubic-bezier(0.34,1.56,0.64,1) infinite" }}>
                             <rect x={57} y={57} width={76} height={16} rx={8} fill="#fbbf24"/>
-                            <text x={95} y={65} textAnchor="middle" dominantBaseline="middle" fontFamily="Inter,system-ui,sans-serif" fontSize={8} fontWeight={700} fill="#000">POST /data</text>
+                            <text x={95} y={65} textAnchor="middle" dominantBaseline="middle" fontFamily="var(--font-roboto),system-ui,sans-serif" fontSize={8} fontWeight={700} fill="#000">POST /data</text>
                         </g>
 
                         {/* ─ Arrow 2: API→DB (sky) ─ */}
@@ -1196,7 +1197,7 @@ No explanation, no markdown, just the JSON object.`,
                         <polygon points="244,100 234,95 234,105" fill="#38bdf8" style={{ animation: "sdP2 2.5s ease-out infinite", transformOrigin: "244px 100px" }}/>
                         <g style={{ transformOrigin: "197px 100px", animation: "sdP2 2.5s cubic-bezier(0.34,1.56,0.64,1) infinite" }}>
                             <rect x={159} y={92} width={76} height={16} rx={8} fill="#38bdf8"/>
-                            <text x={197} y={100} textAnchor="middle" dominantBaseline="middle" fontFamily="Inter,system-ui,sans-serif" fontSize={8} fontWeight={700} fill="#000">INSERT row</text>
+                            <text x={197} y={100} textAnchor="middle" dominantBaseline="middle" fontFamily="var(--font-roboto),system-ui,sans-serif" fontSize={8} fontWeight={700} fill="#000">INSERT row</text>
                         </g>
 
                         {/* ─ Arrow 3: DB→API return dashed (teal) ─ */}
@@ -1204,7 +1205,7 @@ No explanation, no markdown, just the JSON object.`,
                         <polygon points="156,128 166,123 166,133" fill="#34d399" style={{ animation: "sdA3 2.5s ease-out infinite" }}/>
                         <g style={{ transformOrigin: "200px 128px", animation: "sdP3 2.5s cubic-bezier(0.34,1.56,0.64,1) infinite" }}>
                             <rect x={162} y={120} width={76} height={16} rx={8} fill="#34d399" fillOpacity={0.85}/>
-                            <text x={200} y={128} textAnchor="middle" dominantBaseline="middle" fontFamily="Inter,system-ui,sans-serif" fontSize={8} fontWeight={700} fill="#000">201 created</text>
+                            <text x={200} y={128} textAnchor="middle" dominantBaseline="middle" fontFamily="var(--font-roboto),system-ui,sans-serif" fontSize={8} fontWeight={700} fill="#000">201 created</text>
                         </g>
 
                         {/* ─ Arrow 4: API→Client return dashed (violet) ─ */}
@@ -1212,7 +1213,7 @@ No explanation, no markdown, just the JSON object.`,
                         <polygon points="56,155 66,150 66,160" fill="#a78bfa" style={{ animation: "sdA4 2.5s ease-out infinite" }}/>
                         <g style={{ transformOrigin: "100px 155px", animation: "sdP4 2.5s cubic-bezier(0.34,1.56,0.64,1) infinite" }}>
                             <rect x={62} y={147} width={76} height={16} rx={8} fill="#a78bfa" fillOpacity={0.85}/>
-                            <text x={100} y={155} textAnchor="middle" dominantBaseline="middle" fontFamily="Inter,system-ui,sans-serif" fontSize={8} fontWeight={700} fill="#000">200 ok ✓</text>
+                            <text x={100} y={155} textAnchor="middle" dominantBaseline="middle" fontFamily="var(--font-roboto),system-ui,sans-serif" fontSize={8} fontWeight={700} fill="#000">200 ok ✓</text>
                         </g>
 
                         {/* ─ participant boxes bottom ─ */}
@@ -1440,7 +1441,7 @@ No explanation, no markdown, just the JSON object.`,
                                     onPaste={handlePaste}
                                     style={{
                                         fontFamily: "'JetBrains Mono', 'Fira Code', monospace",
-                                        fontSize: "9px",
+                                        fontSize: "12px",
                                         lineHeight: 1.75,
                                         minHeight: "100%",
                                         color: ut.codeText,
@@ -1606,7 +1607,7 @@ No explanation, no markdown, just the JSON object.`,
                             onPaste={handlePaste}
                             style={{
                                 fontFamily: "'JetBrains Mono', 'Fira Code', monospace",
-                                fontSize: "11px",
+                                fontSize: "16px",
                                 lineHeight: 1.8,
                                 minHeight: "100%",
                                 color: ut.codeText,

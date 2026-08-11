@@ -4,8 +4,8 @@
 
 @font-face {
   font-family: 'DSEG7Modern';
-  src: url('/fonts/DSEG7Modern-Regular.woff2') format('woff2'),
-       url('/fonts/DSEG7Modern-Regular.woff') format('woff');
+  src: url('https://cdn.jsdelivr.net/npm/dseg@0.46.0/fonts/DSEG7-Modern/DSEG7Modern-Regular.woff2') format('woff2'),
+       url('https://cdn.jsdelivr.net/npm/dseg@0.46.0/fonts/DSEG7-Modern/DSEG7Modern-Regular.woff') format('woff');
   font-display: swap;
 }
 
@@ -26,8 +26,9 @@ body {
 }
 
 :focus-visible {
-  outline: 2px solid #000;
+  outline: 2px solid #3b82f6;
   outline-offset: 2px;
+  box-shadow: 0 0 0 4px rgba(59,130,246,0.25);
 }
 
 /* ── Slim modern range slider ─────────────────────────────────────────────── */

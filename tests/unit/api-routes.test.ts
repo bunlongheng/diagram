@@ -23,6 +23,19 @@ vi.mock("@/lib/slugs", () => ({
   uniqueDiagramSlug: vi.fn().mockResolvedValue("slug-1"),
 }));
 
+// Anthropic SDK mock — `new Anthropic(...)` returns an object exposing a
+// controllable `messages.create` so tests can drive the ai/generate success,
+// billing-error, and malformed-response branches without hitting the real API.
+const { mockAnthropicCreate } = vi.hoisted(() => ({
+  mockAnthropicCreate: vi.fn(),
+}));
+
+vi.mock("@anthropic-ai/sdk", () => ({
+  default: class {
+    messages = { create: mockAnthropicCreate };
+  },
+}));
+
 // ── Imports after mocks ──────────────────────────────────────────────────────
 import db from "@/lib/db";
 import { authorizeOwner, resolveOwnerId, ownerId } from "@/lib/auth-owner";
@@ -297,7 +310,76 @@ describe("POST /api/ai/generate", () => {
     expect(res.status).toBe(400);
   });
 
-  // NOTE: success path is NOT tested -- it calls the real Anthropic API.
+  it("returns 201 with url/svg/editor links on a successful generation", async () => {
+    mockAuthorizeOwner.mockResolvedValue(true);
+    mockOwnerId.mockReturnValue("owner-uuid");
+    mockAnthropicCreate.mockResolvedValue({
+      content: [
+        {
+          type: "text",
+          text: JSON.stringify({
+            title: "My Diagram",
+            code: "---\ntitle: My Diagram\n---\nsequenceDiagram\nA->>B: hi",
+            diagramType: "sequence",
+          }),
+        },
+      ],
+      usage: { output_tokens: 42 },
+    });
+    q.mockResolvedValue({
+      rows: [{ id: "d-gen-1", title: "My Diagram", slug: "slug-1" }],
+      rowCount: 1,
+    });
+
+    const { POST } = await import("@/app/api/ai/generate/route");
+    const req = new NextRequest("http://localhost:3002/api/ai/generate", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ prompt: "draw me a login flow" }),
+    });
+    const res = await POST(req);
+    expect(res.status).toBe(201);
+    const body = await res.json();
+    expect(body.id).toBe("d-gen-1");
+    expect(body.url).toBe("https://diagrams-bheng.vercel.app/d/d-gen-1");
+    expect(body.svg).toBe("https://diagrams-bheng.vercel.app/svg/d-gen-1");
+    expect(body.editor).toBe("https://diagrams-bheng.vercel.app/?id=d-gen-1");
+  });
+
+  it("returns 402 when the Anthropic SDK reports a billing error", async () => {
+    mockAuthorizeOwner.mockResolvedValue(true);
+    mockAnthropicCreate.mockRejectedValue(new Error("Your credit balance is too low"));
+
+    const { POST } = await import("@/app/api/ai/generate/route");
+    const req = new NextRequest("http://localhost:3002/api/ai/generate", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ prompt: "draw me a diagram" }),
+    });
+    const res = await POST(req);
+    expect(res.status).toBe(402);
+    const body = await res.json();
+    expect(body.error).toMatch(/billing/i);
+  });
+
+  it("returns 500 when the model response contains no JSON", async () => {
+    mockAuthorizeOwner.mockResolvedValue(true);
+    mockAnthropicCreate.mockResolvedValue({
+      content: [{ type: "text", text: "Sorry, I can't help with that." }],
+      usage: { output_tokens: 5 },
+    });
+
+    const { POST } = await import("@/app/api/ai/generate/route");
+    const req = new NextRequest("http://localhost:3002/api/ai/generate", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ prompt: "draw me a diagram" }),
+    });
+    const res = await POST(req);
+    expect(res.status).toBe(500);
+    const body = await res.json();
+    expect(body.error).toBe("Diagram generation failed");
+  });
 });
 
 // ════════════════════════════════════════════════════════════════════════════
@@ -428,6 +510,54 @@ describe("POST /api/ai/diagrams", () => {
     expect(res.status).toBe(400);
     vi.unstubAllEnvs();
   });
+
+  it("returns 201 with only the svg field on a successful insert", async () => {
+    vi.stubEnv("AI_API_SECRET", SECRET);
+    vi.resetModules();
+    mockOwnerId.mockReturnValue("owner-uuid");
+    q.mockResolvedValue({ rows: [{ id: "d-api-1" }], rowCount: 1 });
+
+    const { POST } = await import("@/app/api/ai/diagrams/route");
+    const req = new NextRequest("http://localhost:3002/api/ai/diagrams", {
+      method: "POST",
+      headers: { "content-type": "application/json", authorization: `Bearer ${SECRET}` },
+      body: JSON.stringify({ title: "My Flow", code: "sequenceDiagram\nA->>B: hi", diagramType: "sequence" }),
+    });
+    const res = await POST(req);
+    expect(res.status).toBe(201);
+    const body = await res.json();
+    expect(body).toEqual({ svg: "https://diagrams-bheng.vercel.app/svg/d-api-1" });
+    vi.unstubAllEnvs();
+  });
+
+  it("forces tags to [\"API\"] regardless of any tags field the caller sends", async () => {
+    vi.stubEnv("AI_API_SECRET", SECRET);
+    vi.resetModules();
+    mockOwnerId.mockReturnValue("owner-uuid");
+    q.mockResolvedValue({ rows: [{ id: "d-api-2" }], rowCount: 1 });
+
+    const { POST } = await import("@/app/api/ai/diagrams/route");
+    const req = new NextRequest("http://localhost:3002/api/ai/diagrams", {
+      method: "POST",
+      headers: { "content-type": "application/json", authorization: `Bearer ${SECRET}` },
+      body: JSON.stringify({
+        title: "My Flow",
+        code: "sequenceDiagram\nA->>B: hi",
+        diagramType: "sequence",
+        tags: ["totally-arbitrary", "owner-controlled"],
+      }),
+    });
+    const res = await POST(req);
+    expect(res.status).toBe(201);
+    // The route never reads `tags` off the request body -- every automation
+    // insert is hard-forced to ["API"], so a caller-supplied tags array is
+    // silently ignored rather than merged or honored.
+    expect(q).toHaveBeenCalledWith(
+      expect.stringContaining("INSERT INTO diagrams"),
+      expect.arrayContaining([["API"]]),
+    );
+    vi.unstubAllEnvs();
+  });
 });
 
 // ════════════════════════════════════════════════════════════════════════════
@@ -480,13 +610,22 @@ describe("GET /api/export", () => {
 // GET /api/lan-ip
 // ════════════════════════════════════════════════════════════════════════════
 describe("GET /api/lan-ip", () => {
-  it("returns 200 with ip property", async () => {
+  it("returns 200 with ip property when authorized", async () => {
+    mockAuthorizeOwner.mockResolvedValue(true);
     const { GET } = await import("@/app/api/lan-ip/route");
-    const res = await GET();
+    const req = new NextRequest("http://localhost:3002/api/lan-ip");
+    const res = await GET(req);
     expect(res.status).toBe(200);
     const body = await res.json();
     expect("ip" in body).toBe(true);
     expect(body.ip === null || typeof body.ip === "string").toBe(true);
+  });
+
+  it("returns 401 when not authorized", async () => {
+    const { GET } = await import("@/app/api/lan-ip/route");
+    const req = new NextRequest("https://diagrams-bheng.vercel.app/api/lan-ip");
+    const res = await GET(req);
+    expect(res.status).toBe(401);
   });
 });
 

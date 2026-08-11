@@ -351,7 +351,7 @@ export function SettingsContent({
                                                     }
                                                 }}
                                                 onKeyDown={e => { if (e.key === "Enter") e.currentTarget.blur(); }}
-                                                style={{ fontSize: fs(12), fontWeight: 700, color: "#000", flex: 1, minWidth: 0, background: "transparent", border: "none", outline: "none", fontFamily: "inherit", padding: 0 }}
+                                                style={{ fontSize: fs(12), fontWeight: 700, color: "#000", flex: 1, minWidth: 0, background: "transparent", border: "none", fontFamily: "inherit", padding: 0 }}
                                             />
                                             {/* Color picker swatch — click to change color */}
                                             <label title={hasOverride ? "Reset to default color (right-click)" : "Pick color"} style={{
@@ -448,7 +448,7 @@ function IconPicker({ value, color, ut, onChange }: { value: string; color: stri
                         value={search}
                         onChange={e => setSearch(e.target.value)}
                         placeholder="Search… (u = user, db, bot…)"
-                        style={{ width: "100%", background: ut.activeTab, border: `1px solid ${ut.divider}`, borderRadius: 6, color: ut.bodyText, fontSize: 11, padding: "5px 8px", outline: "none", marginBottom: 8, boxSizing: "border-box" }}
+                        style={{ width: "100%", background: ut.activeTab, border: `1px solid ${ut.divider}`, borderRadius: 6, color: ut.bodyText, fontSize: 11, padding: "5px 8px", marginBottom: 8, boxSizing: "border-box" }}
                     />
                     <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 4, maxHeight: 210, overflowY: "auto" }}>
                         {filtered.map(k => (
