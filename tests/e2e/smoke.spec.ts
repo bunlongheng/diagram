@@ -27,7 +27,7 @@ test.describe("Diagrams -- Smoke Tests", () => {
   test("login subtitle text is visible", async ({ page }) => {
     await page.goto("/");
     await expect(
-      page.getByText("Sign in to view your saved diagrams")
+      page.getByText("Sign in to view your diagrams")
     ).toBeVisible({ timeout: 10_000 });
   });
 
