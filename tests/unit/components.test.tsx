@@ -237,7 +237,7 @@ describe("DiagramsShell", () => {
     render(<DiagramsShell />);
     await waitFor(() => {
       expect(
-        screen.getByText(/sign in to view your saved diagrams/i)
+        screen.getByText(/sign in to view your diagrams/i)
       ).toBeInTheDocument();
     });
   });
@@ -292,7 +292,7 @@ describe("DiagramsShell", () => {
       expect(screen.getByText("CLIENT_STUB")).toBeInTheDocument();
     });
     expect(
-      screen.queryByText(/sign in to view your saved diagrams/i)
+      screen.queryByText(/sign in to view your diagrams/i)
     ).not.toBeInTheDocument();
   });
 
@@ -303,7 +303,7 @@ describe("DiagramsShell", () => {
     render(<DiagramsShell />);
     await waitFor(() => {
       expect(
-        screen.getByText(/sign in to view your saved diagrams/i)
+        screen.getByText(/sign in to view your diagrams/i)
       ).toBeInTheDocument();
     });
   });
