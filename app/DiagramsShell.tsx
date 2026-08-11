@@ -81,37 +81,53 @@ export default function DiagramsShell({ initial }: { initial?: { user: ShellUser
             message arrows cascading down them - a live sequence diagram running. */}
         <svg aria-hidden="true" viewBox="0 0 1200 800" preserveAspectRatio="xMidYMid slice"
           style={{ position: "absolute", inset: 0, width: "100%", height: "100%", pointerEvents: "none" }}>
-          <defs><filter id="dgSoft"><feGaussianBlur stdDeviation="60" /></filter></defs>
-          <circle className="dg-blob" cx="380" cy="300" r="150" fill="#ef4444" opacity="0.10" filter="url(#dgSoft)" />
-          <circle className="dg-blob" cx="600" cy="480" r="160" fill="#eab308" opacity="0.10" filter="url(#dgSoft)" style={{ animationDelay: "-3s" }} />
-          <circle className="dg-blob" cx="820" cy="320" r="150" fill="#22c55e" opacity="0.10" filter="url(#dgSoft)" style={{ animationDelay: "-6s" }} />
-          <line className="dg-life" x1="380" y1="110" x2="380" y2="710" stroke="#ef4444" strokeWidth="3" strokeDasharray="10 14" opacity="0.28" />
-          <line className="dg-life" x1="600" y1="110" x2="600" y2="710" stroke="#eab308" strokeWidth="3" strokeDasharray="10 14" opacity="0.28" style={{ animationDuration: "7.5s" }} />
-          <line className="dg-life" x1="820" y1="110" x2="820" y2="710" stroke="#22c55e" strokeWidth="3" strokeDasharray="10 14" opacity="0.28" style={{ animationDuration: "6.5s" }} />
-          <g className="dg-msg">
-            <line x1="380" y1="210" x2="600" y2="210" stroke="#f97316" strokeWidth="4.5" strokeLinecap="round" />
-            <polygon points="600,210 578,200 578,220" fill="#f97316" />
+          <defs>
+            <radialGradient id="dgR"><stop offset="0%" stopColor="#ef4444" stopOpacity="0.16" /><stop offset="70%" stopColor="#ef4444" stopOpacity="0" /></radialGradient>
+            <radialGradient id="dgY"><stop offset="0%" stopColor="#eab308" stopOpacity="0.16" /><stop offset="70%" stopColor="#eab308" stopOpacity="0" /></radialGradient>
+            <radialGradient id="dgGr"><stop offset="0%" stopColor="#22c55e" stopOpacity="0.16" /><stop offset="70%" stopColor="#22c55e" stopOpacity="0" /></radialGradient>
+            <radialGradient id="dgSpotG"><stop offset="0%" stopColor="#ffffff" stopOpacity="0.95" /><stop offset="45%" stopColor="#8b5cf6" stopOpacity="0.14" /><stop offset="100%" stopColor="#8b5cf6" stopOpacity="0" /></radialGradient>
+          </defs>
+          {/* organic drifting color glows - radial gradients, no hard square edges */}
+          <ellipse className="dg-blob" cx="360" cy="330" rx="320" ry="290" fill="url(#dgR)" />
+          <ellipse className="dg-blob" cx="620" cy="500" rx="340" ry="300" fill="url(#dgY)" style={{ animationDelay: "-8s" }} />
+          <ellipse className="dg-blob" cx="850" cy="330" rx="320" ry="290" fill="url(#dgGr)" style={{ animationDelay: "-16s" }} />
+          {/* faint participant boxes atop the lifelines - the real sequence diagram */}
+          <g className="dg-graph">
+            <rect x="332" y="84" width="96" height="42" rx="11" fill="#ef4444" fillOpacity="0.10" stroke="#ef4444" strokeOpacity="0.32" strokeWidth="2" />
+            <rect x="552" y="84" width="96" height="42" rx="11" fill="#eab308" fillOpacity="0.10" stroke="#eab308" strokeOpacity="0.32" strokeWidth="2" />
+            <rect x="772" y="84" width="96" height="42" rx="11" fill="#22c55e" fillOpacity="0.10" stroke="#22c55e" strokeOpacity="0.32" strokeWidth="2" />
           </g>
-          <g className="dg-msg" style={{ animationDelay: "0.6s" }}>
-            <line x1="600" y1="300" x2="820" y2="300" stroke="#22c55e" strokeWidth="4.5" strokeLinecap="round" />
-            <polygon points="820,300 798,290 798,310" fill="#22c55e" />
+          {/* lifelines dropping from each box */}
+          <line className="dg-life" x1="380" y1="126" x2="380" y2="720" stroke="#ef4444" strokeWidth="3" strokeDasharray="10 14" opacity="0.26" />
+          <line className="dg-life" x1="600" y1="126" x2="600" y2="720" stroke="#eab308" strokeWidth="3" strokeDasharray="10 14" opacity="0.26" style={{ animationDuration: "15s" }} />
+          <line className="dg-life" x1="820" y1="126" x2="820" y2="720" stroke="#22c55e" strokeWidth="3" strokeDasharray="10 14" opacity="0.26" style={{ animationDuration: "13s" }} />
+          {/* message arrows cascading down the lifelines */}
+          <g className="dg-msg">
+            <line x1="380" y1="220" x2="600" y2="220" stroke="#f97316" strokeWidth="4.5" strokeLinecap="round" />
+            <polygon points="600,220 578,210 578,230" fill="#f97316" />
           </g>
           <g className="dg-msg" style={{ animationDelay: "1.2s" }}>
-            <line x1="820" y1="390" x2="600" y2="390" stroke="#06b6d4" strokeWidth="4.5" strokeLinecap="round" />
-            <polygon points="600,390 622,380 622,400" fill="#06b6d4" />
-          </g>
-          <g className="dg-msg" style={{ animationDelay: "1.8s" }}>
-            <line x1="600" y1="480" x2="380" y2="480" stroke="#ef4444" strokeWidth="4.5" strokeLinecap="round" />
-            <polygon points="380,480 402,470 402,490" fill="#ef4444" />
+            <line x1="600" y1="310" x2="820" y2="310" stroke="#22c55e" strokeWidth="4.5" strokeLinecap="round" />
+            <polygon points="820,310 798,300 798,320" fill="#22c55e" />
           </g>
           <g className="dg-msg" style={{ animationDelay: "2.4s" }}>
-            <line x1="380" y1="570" x2="820" y2="570" stroke="#8b5cf6" strokeWidth="4.5" strokeLinecap="round" />
-            <polygon points="820,570 798,560 798,580" fill="#8b5cf6" />
+            <line x1="820" y1="400" x2="600" y2="400" stroke="#06b6d4" strokeWidth="4.5" strokeLinecap="round" />
+            <polygon points="600,400 622,390 622,410" fill="#06b6d4" />
           </g>
-          <g className="dg-msg" style={{ animationDelay: "3s" }}>
-            <line x1="820" y1="640" x2="600" y2="640" stroke="#eab308" strokeWidth="4.5" strokeLinecap="round" />
-            <polygon points="600,640 622,630 622,650" fill="#eab308" />
+          <g className="dg-msg" style={{ animationDelay: "3.6s" }}>
+            <line x1="600" y1="490" x2="380" y2="490" stroke="#ef4444" strokeWidth="4.5" strokeLinecap="round" />
+            <polygon points="380,490 402,480 402,500" fill="#ef4444" />
           </g>
+          <g className="dg-msg" style={{ animationDelay: "4.8s" }}>
+            <line x1="380" y1="580" x2="820" y2="580" stroke="#8b5cf6" strokeWidth="4.5" strokeLinecap="round" />
+            <polygon points="820,580 798,570 798,590" fill="#8b5cf6" />
+          </g>
+          <g className="dg-msg" style={{ animationDelay: "6s" }}>
+            <line x1="820" y1="650" x2="600" y2="650" stroke="#eab308" strokeWidth="4.5" strokeLinecap="round" />
+            <polygon points="600,650 622,640 622,660" fill="#eab308" />
+          </g>
+          {/* roaming spotlight - flashes a random-feeling spot every ~10s */}
+          <g className="dg-spot"><circle r="170" fill="url(#dgSpotG)" /></g>
         </svg>
 
         <div style={{ position: "relative", zIndex: 1, textAlign: "center", display: "flex", flexDirection: "column", alignItems: "center", gap: 18, padding: 24 }}>
@@ -128,18 +144,32 @@ export default function DiagramsShell({ initial }: { initial?: { user: ShellUser
           @keyframes dgUp { from { opacity: 0; transform: translateY(18px); } to { opacity: 1; transform: translateY(0); } }
           @keyframes dgFloat { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-7px); } }
           @keyframes dgFlow { to { stroke-dashoffset: -240; } }
-          @keyframes dgMsg { 0%,8% { opacity: 0; } 16% { opacity: 0.32; } 34% { opacity: 0.32; } 46%,100% { opacity: 0; } }
-          @keyframes dgBlob { 0%,100% { transform: translate(0,0); } 50% { transform: translate(22px,-18px); } }
+          @keyframes dgMsg { 0%,10% { opacity: 0; } 18% { opacity: 0.3; } 40% { opacity: 0.3; } 52%,100% { opacity: 0; } }
+          @keyframes dgBlob { 0%,100% { transform: translate(0,0); } 50% { transform: translate(26px,-20px); } }
+          @keyframes dgSpot {
+            0%,30% { opacity: 0; transform: translate(320px,250px); }
+            34% { opacity: 0.55; transform: translate(320px,250px); }
+            38% { opacity: 0; transform: translate(320px,250px); }
+            63% { opacity: 0; transform: translate(880px,300px); }
+            67% { opacity: 0.55; transform: translate(880px,300px); }
+            71% { opacity: 0; transform: translate(880px,300px); }
+            96% { opacity: 0; transform: translate(600px,610px); }
+            99% { opacity: 0.55; transform: translate(600px,610px); }
+            100% { opacity: 0; transform: translate(600px,610px); }
+          }
           .dg-in { opacity: 0; animation: dgUp 0.7s cubic-bezier(.16,.84,.44,1) both; }
-          .dg-icon { opacity: 0; animation: dgUp 0.7s cubic-bezier(.16,.84,.44,1) both, dgFloat 5.5s ease-in-out 0.8s infinite; }
+          .dg-icon { opacity: 0; animation: dgUp 0.7s cubic-bezier(.16,.84,.44,1) both, dgFloat 6.5s ease-in-out 0.8s infinite; }
           .dg-t1 { animation-delay: 0.12s; }
           .dg-t2 { animation-delay: 0.22s; }
           .dg-t3 { animation-delay: 0.34s; }
-          .dg-life { animation: dgFlow 8s linear infinite; }
-          .dg-msg { opacity: 0; animation: dgMsg 3.6s ease-in-out infinite; }
-          .dg-blob { animation: dgBlob 9s ease-in-out infinite; }
+          .dg-graph { opacity: 0; animation: dgUp 1.2s ease 0.35s both; }
+          .dg-life { animation: dgFlow 17s linear infinite; }
+          .dg-msg { opacity: 0; animation: dgMsg 7.2s ease-in-out infinite; }
+          .dg-blob { animation: dgBlob 18s ease-in-out infinite; }
+          .dg-spot { animation: dgSpot 30s ease-in-out infinite; }
           @media (prefers-reduced-motion: reduce) {
-            .dg-in, .dg-icon, .dg-life, .dg-msg, .dg-blob { animation: none !important; opacity: 1 !important; }
+            .dg-in, .dg-icon, .dg-life, .dg-msg, .dg-blob, .dg-graph { animation: none !important; opacity: 1 !important; }
+            .dg-spot { display: none; }
           }
         `}</style>
       </div>

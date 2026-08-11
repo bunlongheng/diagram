@@ -1007,22 +1007,7 @@ export default function DiagramsClient({ user, diagrams: initial }: { user: Shel
       <header className="dc-header" style={{ background: "#ffffff", borderBottom: "1px solid #e4e6e8", height: 56, position: "sticky", top: 0, zIndex: 10 }}>
       <div style={{ maxWidth: 1600, margin: "0 auto", padding: "0 32px", height: "100%", display: "flex", alignItems: "center", gap: 20 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 10, flexShrink: 0 }}>
-          <svg width={28} height={28} viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg" style={{ borderRadius: 8 }}>
-            <defs><linearGradient id="hbg" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stopColor="#0f051e"/><stop offset="55%" stopColor="#2e0f6b"/><stop offset="100%" stopColor="#0c2340"/></linearGradient></defs>
-            <rect width="512" height="512" rx="115" fill="url(#hbg)"/>
-            <rect x="48"  y="80" width="130" height="72" rx="16" fill="#fb7185"/>
-            <rect x="191" y="80" width="130" height="72" rx="16" fill="#a78bfa"/>
-            <rect x="334" y="80" width="130" height="72" rx="16" fill="#34d399"/>
-            <line x1="113" y1="152" x2="113" y2="432" stroke="#fb7185" strokeWidth="4" strokeDasharray="20 12" opacity={0.3}/>
-            <line x1="256" y1="152" x2="256" y2="432" stroke="#a78bfa" strokeWidth="4" strokeDasharray="20 12" opacity={0.3}/>
-            <line x1="399" y1="152" x2="399" y2="432" stroke="#34d399" strokeWidth="4" strokeDasharray="20 12" opacity={0.3}/>
-            <line x1="125" y1="210" x2="242" y2="210" stroke="#fbbf24" strokeWidth="14" strokeLinecap="round"/>
-            <polygon points="268,210 240,196 240,224" fill="#fbbf24"/>
-            <line x1="268" y1="290" x2="385" y2="290" stroke="#38bdf8" strokeWidth="14" strokeLinecap="round"/>
-            <polygon points="411,290 383,276 383,304" fill="#38bdf8"/>
-            <line x1="125" y1="370" x2="385" y2="370" stroke="#a78bfa" strokeWidth="14" strokeLinecap="round" strokeDasharray="28 14"/>
-            <polygon points="99,370 127,356 127,384" fill="#a78bfa"/>
-          </svg>
+          <Image src="/icon-512.png" alt="Diagrams" width={28} height={28} style={{ borderRadius: 8 }} />
           <span style={{ fontSize: 14, fontWeight: 700, color: "#1c1e21", letterSpacing: "-0.01em" }}>Diagrams</span>
         </div>
 
