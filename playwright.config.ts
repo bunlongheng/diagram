@@ -18,9 +18,12 @@ export default defineConfig({
   // LOCAL_DEV=true for that same bypass, which would change the auth outcome these
   // tests were written against.
   webServer: {
-    command: "npm run dev",
+    // Prod build, not `next dev`: dev-mode HMR evaluates strings as JS, which the
+    // strict CSP (script-src without 'unsafe-eval') blocks - producing false
+    // "fatal error" failures. Testing the production build matches what ships.
+    command: "npm run build && npm run start",
     url: "http://localhost:3002",
     reuseExistingServer: !process.env.CI,
-    timeout: 120_000,
+    timeout: 180_000,
   },
 });
