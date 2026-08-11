@@ -1,4 +1,6 @@
 import type { NextConfig } from "next";
+// Fail the production build if required env vars are missing (see lib/env.ts).
+import "./lib/env";
 
 const securityHeaders = [
   { key: "Strict-Transport-Security", value: "max-age=63072000; includeSubDomains; preload" },

@@ -57,7 +57,8 @@ flowchart LR
 
 | Layer | Role |
 |-------|------|
-| `app/page.tsx` | View router + the full diagram editor (client) |
+| `app/page.tsx` | Server router: SSR index vs. the client editor |
+| `app/DiagramEditor.tsx` | The diagram editor (client) |
 | `app/DiagramsShell.tsx` -> `DiagramsClient.tsx` | Auth gate + the index grid |
 | `app/MermaidRenderer.tsx` | Dynamic Mermaid.js path for non-sequence types |
 | `lib/svg-renderer.ts` | Pure `parse` / `buildSvg` / `detectDiagramType`, shared client + server |
@@ -118,11 +119,24 @@ Then open http://localhost:3002. On localhost the app runs in owner mode without
 | `AUTH_SECRET` | yes | NextAuth session signing (`openssl rand -base64 32`) |
 | `GOOGLE_CLIENT_ID` | yes | Google OAuth client id |
 | `GOOGLE_CLIENT_SECRET` | yes | Google OAuth client secret |
-| `OWNER_EMAIL` | yes | The single email allowed to sign in (fail-closed if unset) |
+| `OWNER_EMAIL` | yes | The single email allowed to sign in (fail-closed if unset). `ALLOWED_EMAIL` is accepted as a legacy fallback |
 | `OWNER_USER_ID` | yes | UUID written as `diagrams.user_id` so existing rows resolve |
 | `AI_API_SECRET` | for API | Bearer token for `POST /api/ai/diagrams` |
 | `ANTHROPIC_API_KEY` | for AI | Claude API key for `POST /api/ai/generate` |
 | `AUTH_TRUST_HOST` | behind proxy | Set `true` when running behind a reverse proxy in prod |
+| `NEXT_PUBLIC_APP_URL` | recommended | Public base URL used to build absolute links in `app/api/**` responses |
+| `NEXT_PUBLIC_SITE_URL` | recommended | Public site URL used for metadata/OpenGraph tags in `app/layout.tsx` |
+| `LOCAL_DEV` | dev only | Dev-only auth bypass (`lib/is-local.ts`) - never set this in production |
+
+### Database setup
+
+Apply the SQL migrations to a fresh database with:
+
+```bash
+npm run migrate
+```
+
+This applies every file in `db/migrations/*.sql` in order.
 
 ## Project layout
 
@@ -147,6 +161,7 @@ lib/
   svg-renderer.ts       # pure parse/buildSvg/detectDiagramType (client + server)
   db.ts                 # pg pool
   auth-owner.ts         # single-owner authorization
+  editor-logic.ts       # pure editor helpers, extracted from DiagramEditor (unit tested)
   slugs.ts, is-local.ts, diagram-code.ts  # helpers
   fonts/                # Roboto TTFs for resvg OG rendering
 auth.ts                 # NextAuth v5 config

@@ -216,7 +216,7 @@ function buildSvg(d: Diagram, o: Opts, l: Layout, createdAt?: string | Date): st
     const ps = ps_raw.map(p => o.labelOverrides?.[p.id] ? { ...p, label: o.labelOverrides[p.id] } : p);
     const N = ps.length;
     const BR = 6, LP = l.margin ?? 50, MG = l.stepHeight;
-    const AH = 8, SW = 50, SH = 36, FS = l.textSize;
+    const AH = 8, FS = l.textSize;
     const BOX_FS = 13;
     const BH = Math.max(36, Math.round(BOX_FS * 2.6));
     const diagramTitle = d.title ?? DEFAULT_DIAGRAM_TITLE;
@@ -293,11 +293,14 @@ function buildSvg(d: Diagram, o: Opts, l: Layout, createdAt?: string | Date): st
         notesSectionH = maxColH + NOTE_SEC_PAD * 2;
     }
     const stepGap = MG + VP;
-    const H = TOP_PAD + TITLE_H + TP + BH + VP + Math.max(0, totalSteps - 1) * stepGap + VP + BH + notesSectionH + BOT_PAD;
+    // Default breathing room between the header/footer boxes and the first/last
+    // step, applied only at the top and bottom edges (not between every step).
+    const EDGE_PAD = 24;
+    const H = TOP_PAD + TITLE_H + TP + BH + EDGE_PAD + VP + Math.max(0, totalSteps - 1) * stepGap + VP + EDGE_PAD + BH + notesSectionH + BOT_PAD;
     const lt = TOP_PAD + TITLE_H + TP + BH, lb = H - BOT_PAD - notesSectionH - BH;
-    const msgY = (s: number) => TOP_PAD + TITLE_H + TP + BH + VP + (s - 1) * stepGap;
+    const msgY = (s: number) => TOP_PAD + TITLE_H + TP + BH + EDGE_PAD + VP + (s - 1) * stepGap;
     const f = `'${o.font}', sans-serif`;
-    const ld = LIFELINE_DASH.solid;
+    const ld = LIFELINE_DASH[o.lifelineDash] ?? LIFELINE_DASH.solid;
     const lifelineSW = ld.sw ?? 1.5;
     const lifelineCapAttr = ld.cap ? ` stroke-linecap="${ld.cap}"` : "";
     const th = THEMES[o.theme] ?? THEMES.light;
@@ -323,12 +326,12 @@ function buildSvg(d: Diagram, o: Opts, l: Layout, createdAt?: string | Date): st
     ps.forEach((p, i) => {
         const col = pcol(i);
         const c = o.coloredLines ? col + "60" : "#d1d5db";
-        parts.push(`<line x1="${cx(i)}" y1="${lt}" x2="${cx(i)}" y2="${lb}" stroke="${c}" stroke-width="${lifelineSW}" stroke-dasharray="${ld.da}"${lifelineCapAttr} data-pid="${p.id}"/>`);
+        parts.push(`<line x1="${cx(i)}" y1="${lt}" x2="${cx(i)}" y2="${lb}" stroke="${c}" stroke-width="${lifelineSW}" stroke-dasharray="${ld.da}"${lifelineCapAttr} data-pid="${esc(p.id)}"/>`);
     });
     const renderBox = (p: Participant, i: number, y: number) => {
         p = { ...p, label: p.label.replace(/<br\s*\/?>/gi, " ").trim() };
         const bw = pBW[i]; const x = cx(i) - bw / 2; const col = pcol(i);
-        parts.push(`<g data-pid="${p.id}" style="cursor:pointer">`);
+        parts.push(`<g data-pid="${esc(p.id)}" style="cursor:pointer">`);
         parts.push(`<rect x="${x}" y="${y}" width="${bw}" height="${BH}" rx="${BR}" fill="${col}" stroke="${th.boxStroke}" stroke-width="${th.boxStrokeW}"/>`);
         if (o.boxOverlay !== "none") {
             const clipId = `bcp${i}_${Math.round(y)}`;
@@ -369,11 +372,14 @@ function buildSvg(d: Diagram, o: Opts, l: Layout, createdAt?: string | Date): st
         const fi = idx.get(msg.from) ?? 0, ti = idx.get(msg.to) ?? 0;
         const y = msgY(msg.seqPos); const fx = cx(fi), tx = cx(ti);
         const fpColor = pcol(fi);
-        parts.push(`<g data-from="${msg.from}" data-to="${msg.to}">`);
+        const stepNum = msg.displayStep ?? msg.step;
+        // Uniform circle radius for single- and double-digit step numbers.
+        const cr = 12;
+        parts.push(`<g data-from="${esc(msg.from)}" data-to="${esc(msg.to)}">`);
         const lc = o.coloredLines ? fpColor : "#374151";
         const pillTextFill = o.theme === "dark" ? "#ffffff" : "#000000";
         if (fi === ti) {
-            const pillOffset = o.coloredNumbers ? fx + 14 : fx + 6;
+            const pillOffset = o.coloredNumbers ? fx + cr + 4 : fx + 6;
             if (o.coloredText) {
                 const pillH = FS + 8, pillW = Math.max(40, msg.text.length * (FS * 0.62) + 12);
                 const pillX = pillOffset, pillY = y - pillH / 2;
@@ -386,7 +392,7 @@ function buildSvg(d: Diagram, o: Opts, l: Layout, createdAt?: string | Date): st
         } else {
             const dir = tx > fx ? 1 : -1;
             const isDashed = msg.arrow === "dashed";
-            const lineX1 = o.coloredNumbers ? fx + dir * 11 : fx;
+            const lineX1 = o.coloredNumbers ? fx + dir * (cr + 4) : fx;
             if (isDashed) {
                 parts.push(`<line x1="${lineX1}" y1="${y}" x2="${tx-dir*AH}" y2="${y}" stroke="${lc}"${DASHED_STYLE}/>`);
                 if (dir === 1) parts.push(`<polyline points="${tx-AH},${y-5} ${tx},${y} ${tx-AH},${y+5}" fill="none" stroke="${lc}" stroke-width="1.5"/>`);
@@ -416,8 +422,6 @@ function buildSvg(d: Diagram, o: Opts, l: Layout, createdAt?: string | Date): st
             }
         }
         if (o.coloredNumbers) {
-            const stepNum = msg.displayStep ?? msg.step;
-            const cr = stepNum >= 10 ? 14 : 10;
             parts.push(`<circle cx="${fx}" cy="${y}" r="${cr}" fill="${fpColor}" stroke="${fpColor}" stroke-width="2"/>`);
             parts.push(`<text x="${fx}" y="${y+1}" text-anchor="middle" dominant-baseline="middle" font-family="${f}" font-size="11" font-weight="700" fill="${th.labelFill}">${stepNum}</text>`);
         }

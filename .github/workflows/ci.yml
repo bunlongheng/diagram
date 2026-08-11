@@ -7,13 +7,22 @@ on:
       - main
       - migrate-nextauth-drop-supabase
 
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   test:
     runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      AUTH_SECRET: test-secret-not-real
+      OWNER_EMAIL: test@example.com
+      DATABASE_URL: postgresql://test:test@localhost:5432/test
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v5
         with:
           node-version: 20
           cache: npm
