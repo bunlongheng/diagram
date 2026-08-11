@@ -6,7 +6,7 @@
 // title line is already present.
 export function embedTitleInCode(code: string, title: string): string {
   const finalCode = code.trim();
-  if (/^title:?\s+.+$/im.test(finalCode)) return finalCode;
+  if (/^\s*title:?\s+.+$/im.test(finalCode)) return finalCode;
   return finalCode.replace(
     /^(sequenceDiagram[^\n]*\n?)/im,
     `$1    title: ${title.trim()}\n`

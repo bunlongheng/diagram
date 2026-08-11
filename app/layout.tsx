@@ -15,13 +15,13 @@ const roboto = localFont({
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
-  themeColor: "hsl(285,90%,52%)",
+  themeColor: "#ffffff",
 };
 
 export const metadata: Metadata = {
   title: "Diagrams",
   description: "Beautiful diagram generator — paste any diagram syntax and get a polished visual instantly.",
-  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL ?? "https://diagram-bheng.vercel.app"),
+  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL ?? "https://diagrams-bheng.vercel.app"),
   manifest: "/manifest.webmanifest",
   appleWebApp: {
     capable: true,
@@ -32,7 +32,7 @@ export const metadata: Metadata = {
     title: "Diagrams — Sequence Diagram Generator",
     description: "Paste diagram syntax, get beautiful diagrams instantly.",
     type: "website",
-    url: process.env.NEXT_PUBLIC_SITE_URL ?? "https://diagram-bheng.vercel.app",
+    url: process.env.NEXT_PUBLIC_SITE_URL ?? "https://diagrams-bheng.vercel.app",
   },
   twitter: {
     card: "summary_large_image",
