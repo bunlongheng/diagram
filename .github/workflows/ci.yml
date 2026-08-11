@@ -42,8 +42,8 @@ jobs:
       # the bypass says "owner" but the data routes cannot resolve an owner row,
       # so /api/diagrams still returns 401 - exactly what the e2e suite asserts.
       LOCAL_DEV: "true"
-      NEXT_PUBLIC_APP_URL: http://localhost:3002
-      NEXT_PUBLIC_SITE_URL: http://localhost:3002
+      NEXT_PUBLIC_APP_URL: https://diagrams-bheng.vercel.app
+      NEXT_PUBLIC_SITE_URL: https://diagrams-bheng.vercel.app
 
     steps:
       - uses: actions/checkout@v4
