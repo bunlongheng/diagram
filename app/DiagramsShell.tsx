@@ -91,16 +91,10 @@ export default function DiagramsShell({ initial }: { initial?: { user: ShellUser
           <ellipse className="dg-blob" cx="360" cy="330" rx="320" ry="290" fill="url(#dgR)" />
           <ellipse className="dg-blob" cx="620" cy="500" rx="340" ry="300" fill="url(#dgY)" style={{ animationDelay: "-8s" }} />
           <ellipse className="dg-blob" cx="850" cy="330" rx="320" ry="290" fill="url(#dgGr)" style={{ animationDelay: "-16s" }} />
-          {/* faint participant boxes atop the lifelines - the real sequence diagram */}
-          <g className="dg-graph">
-            <rect x="332" y="84" width="96" height="42" rx="11" fill="#ef4444" fillOpacity="0.10" stroke="#ef4444" strokeOpacity="0.32" strokeWidth="2" />
-            <rect x="552" y="84" width="96" height="42" rx="11" fill="#eab308" fillOpacity="0.10" stroke="#eab308" strokeOpacity="0.32" strokeWidth="2" />
-            <rect x="772" y="84" width="96" height="42" rx="11" fill="#22c55e" fillOpacity="0.10" stroke="#22c55e" strokeOpacity="0.32" strokeWidth="2" />
-          </g>
-          {/* lifelines dropping from each box */}
-          <line className="dg-life" x1="380" y1="126" x2="380" y2="720" stroke="#ef4444" strokeWidth="3" strokeDasharray="10 14" opacity="0.26" />
-          <line className="dg-life" x1="600" y1="126" x2="600" y2="720" stroke="#eab308" strokeWidth="3" strokeDasharray="10 14" opacity="0.26" style={{ animationDuration: "15s" }} />
-          <line className="dg-life" x1="820" y1="126" x2="820" y2="720" stroke="#22c55e" strokeWidth="3" strokeDasharray="10 14" opacity="0.26" style={{ animationDuration: "13s" }} />
+          {/* lifelines */}
+          <line className="dg-life" x1="380" y1="100" x2="380" y2="720" stroke="#ef4444" strokeWidth="3" strokeDasharray="10 14" opacity="0.24" />
+          <line className="dg-life" x1="600" y1="100" x2="600" y2="720" stroke="#eab308" strokeWidth="3" strokeDasharray="10 14" opacity="0.24" style={{ animationDuration: "44s" }} />
+          <line className="dg-life" x1="820" y1="100" x2="820" y2="720" stroke="#22c55e" strokeWidth="3" strokeDasharray="10 14" opacity="0.24" style={{ animationDuration: "40s" }} />
           {/* message arrows cascading down the lifelines */}
           <g className="dg-msg">
             <line x1="380" y1="220" x2="600" y2="220" stroke="#f97316" strokeWidth="4.5" strokeLinecap="round" />
@@ -136,7 +130,7 @@ export default function DiagramsShell({ initial }: { initial?: { user: ShellUser
               style={{ borderRadius: 20, boxShadow: "0 12px 40px rgba(15,23,42,0.16)" }} />
           </div>
           <h1 className="dg-in dg-t1" style={{ fontSize: 32, fontWeight: 800, letterSpacing: "-0.02em", color: "#111827", margin: 0 }}>Diagrams</h1>
-          <p className="dg-in dg-t2" style={{ fontSize: 15, color: "#6b7280", margin: 0, maxWidth: 320, lineHeight: 1.5 }}>Sign in to view your saved diagrams</p>
+          <p className="dg-in dg-t2" style={{ fontSize: 15, color: "#6b7280", margin: 0, maxWidth: 320, lineHeight: 1.5 }}>Sign in to view your diagrams</p>
           <div className="dg-in dg-t3" style={{ marginTop: 6 }}><LoginForm /></div>
         </div>
 
@@ -162,13 +156,12 @@ export default function DiagramsShell({ initial }: { initial?: { user: ShellUser
           .dg-t1 { animation-delay: 0.12s; }
           .dg-t2 { animation-delay: 0.22s; }
           .dg-t3 { animation-delay: 0.34s; }
-          .dg-graph { opacity: 0; animation: dgUp 1.2s ease 0.35s both; }
-          .dg-life { animation: dgFlow 17s linear infinite; }
-          .dg-msg { opacity: 0; animation: dgMsg 7.2s ease-in-out infinite; }
+          .dg-life { animation: dgFlow 48s linear infinite; }
+          .dg-msg { opacity: 0; animation: dgMsg 11s ease-in-out infinite; }
           .dg-blob { animation: dgBlob 18s ease-in-out infinite; }
           .dg-spot { animation: dgSpot 30s ease-in-out infinite; }
           @media (prefers-reduced-motion: reduce) {
-            .dg-in, .dg-icon, .dg-life, .dg-msg, .dg-blob, .dg-graph { animation: none !important; opacity: 1 !important; }
+            .dg-in, .dg-icon, .dg-life, .dg-msg, .dg-blob { animation: none !important; opacity: 1 !important; }
             .dg-spot { display: none; }
           }
         `}</style>
