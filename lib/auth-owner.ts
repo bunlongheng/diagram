@@ -6,20 +6,26 @@ import { isLocal } from "@/lib/is-local";
 // secret for scripts/AI agents, then the NextAuth owner-email session.
 const OWNER_EMAIL = (process.env.OWNER_EMAIL ?? process.env.ALLOWED_EMAIL)?.trim().toLowerCase();
 
-export async function authorizeOwner(req: Request): Promise<boolean> {
+export async function authorizeOwner(req: Request, opts: { allowBearer?: boolean } = {}): Promise<boolean> {
+  const { allowBearer = true } = opts;
+
   // 1. Local/LAN — no login needed in dev
   if (isLocal(req)) return true;
 
-  // 2. Static API secret (external scripts / AI agents)
-  const header = req.headers.get("authorization") ?? "";
-  if (header.startsWith("Bearer ")) {
-    const secrets = [process.env.AI_API_SECRET].filter(Boolean) as string[];
-    for (const secret of secrets) {
-      const expected = `Bearer ${secret}`;
-      if (header.length === expected.length) {
-        try {
-          if (crypto.timingSafeEqual(Buffer.from(header), Buffer.from(expected))) return true;
-        } catch { /* length mismatch — ignore */ }
+  // 2. Static API secret (external scripts / AI agents). Skipped when the caller
+  //    MUST be the logged-in owner — e.g. the AI-generate route, which spends
+  //    Anthropic credits and is admin-only, never a public/Bearer option.
+  if (allowBearer) {
+    const header = req.headers.get("authorization") ?? "";
+    if (header.startsWith("Bearer ")) {
+      const secrets = [process.env.AI_API_SECRET].filter(Boolean) as string[];
+      for (const secret of secrets) {
+        const expected = `Bearer ${secret}`;
+        if (header.length === expected.length) {
+          try {
+            if (crypto.timingSafeEqual(Buffer.from(header), Buffer.from(expected))) return true;
+          } catch { /* length mismatch — ignore */ }
+        }
       }
     }
   }

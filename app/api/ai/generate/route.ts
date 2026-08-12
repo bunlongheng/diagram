@@ -25,8 +25,12 @@ CRITICAL rules:
 - Escape all newlines as \\n in the JSON string`;
 
 export async function POST(req: NextRequest) {
-  // ── Auth: local/LAN bypass, Bearer secret, or owner session ───────────────
-  if (!(await authorizeOwner(req))) {
+  // ── Auth: ADMIN ONLY (local dev bypass or the logged-in owner session).
+  //    The Bearer API secret is intentionally NOT accepted here: AI generation
+  //    spends Anthropic credits and is an owner-only feature. The public API is
+  //    render-only (POST /api/ai/diagrams with a mermaid/JSON body) - it never
+  //    calls Claude, so public callers cannot drain Anthropic dollars.
+  if (!(await authorizeOwner(req, { allowBearer: false }))) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 

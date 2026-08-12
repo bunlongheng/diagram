@@ -59,6 +59,22 @@ describe("authorizeOwner", () => {
     vi.unstubAllEnvs();
   });
 
+  it("rejects a valid Bearer when allowBearer is false (admin-only route like ai/generate)", async () => {
+    vi.stubEnv("AI_API_SECRET", "mysecret");
+    vi.stubEnv("OWNER_EMAIL", "");
+    vi.stubEnv("ALLOWED_EMAIL", "");
+    mockIsLocal.mockReturnValue(false);
+    vi.resetModules();
+    const { authorizeOwner } = await import("@/lib/auth-owner");
+    const req = makeReq({ authorization: "Bearer mysecret" });
+    // The Bearer secret is valid, but this route disallows Bearer → NOT authorized.
+    // This is what keeps AI generation (Anthropic spend) admin-only, never public.
+    expect(await authorizeOwner(req, { allowBearer: false })).toBe(false);
+    // Same request IS authorized when Bearer is allowed (the default), proving the flag is the only difference.
+    expect(await authorizeOwner(req)).toBe(true);
+    vi.unstubAllEnvs();
+  });
+
   it("returns false when Bearer is wrong", async () => {
     vi.stubEnv("AI_API_SECRET", "mysecret");
     mockIsLocal.mockReturnValue(false);
