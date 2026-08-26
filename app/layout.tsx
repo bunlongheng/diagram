@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import localFont from "next/font/local";
 import "./globals.css";
 import Providers from "./providers";
+import SwRegister from "./sw-register";
 
 const roboto = localFont({
   src: [
@@ -20,8 +21,11 @@ export const viewport: Viewport = {
 
 export const metadata: Metadata = {
   title: "Diagrams",
-  description: "Beautiful diagram generator — paste any diagram syntax and get a polished visual instantly.",
-  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL ?? "https://diagrams-bheng.vercel.app"),
+  description:
+    "Beautiful diagram generator — paste any diagram syntax and get a polished visual instantly.",
+  metadataBase: new URL(
+    process.env.NEXT_PUBLIC_SITE_URL ?? "https://diagrams-bheng.vercel.app",
+  ),
   manifest: "/manifest.webmanifest",
   appleWebApp: {
     capable: true,
@@ -32,7 +36,8 @@ export const metadata: Metadata = {
     title: "Diagrams — Sequence Diagram Generator",
     description: "Paste diagram syntax, get beautiful diagrams instantly.",
     type: "website",
-    url: process.env.NEXT_PUBLIC_SITE_URL ?? "https://diagrams-bheng.vercel.app",
+    url:
+      process.env.NEXT_PUBLIC_SITE_URL ?? "https://diagrams-bheng.vercel.app",
   },
   twitter: {
     card: "summary_large_image",
@@ -41,11 +46,16 @@ export const metadata: Metadata = {
   },
 };
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default function RootLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   return (
     <html lang="en" className={roboto.variable}>
       <body suppressHydrationWarning>
         <Providers>{children}</Providers>
+        <SwRegister />
       </body>
     </html>
   );
