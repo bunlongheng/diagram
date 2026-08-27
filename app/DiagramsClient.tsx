@@ -694,10 +694,10 @@ function RenameModal({ title, onSave, onClose }: { title: string; onSave: (t: st
 }
 
 // ── Card ──────────────────────────────────────────────────────────────────────
-function DiagramCard({ d, isShared, onOpen, onDelete, onRename, onTag, onViewCode, deleting, tagColorMap, isNew }: {
+function DiagramCard({ d, isShared, onOpen, onDelete, onRename, onTag, onViewCode, deleting, tagColorMap, isNew, showTags }: {
   d: Diagram; isShared: boolean;
   onOpen: () => void; onDelete: () => void; onRename: () => void; onTag: () => void; onViewCode: () => void;
-  deleting: boolean; tagColorMap: Map<string, typeof TAG_PALETTE[0]>; isNew: boolean;
+  deleting: boolean; tagColorMap: Map<string, typeof TAG_PALETTE[0]>; isNew: boolean; showTags: boolean;
 }) {
   const [hovered, setHovered] = useState(false);
   const tags = d.tags ?? [];
@@ -740,8 +740,8 @@ function DiagramCard({ d, isShared, onOpen, onDelete, onRename, onTag, onViewCod
         </div>
       </div>
 
-      {/* Tags */}
-      {tags.length > 0 && (
+      {/* Tags — hidden on the "All" view to reduce clutter (edit via the hover Tags button) */}
+      {showTags && tags.length > 0 && (
         <div style={{ padding: "0 13px 8px", display: "flex", gap: 4, flexWrap: "wrap" }} role="button" tabIndex={0} aria-label="Edit tags"
           onClick={e => { e.stopPropagation(); onTag(); }}
           onKeyDown={e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.stopPropagation(); onTag(); } }}>
@@ -980,6 +980,9 @@ export default function DiagramsClient({ user, diagrams: initial }: { user: Shel
     deleting: deleting === d.id,
     tagColorMap,
     isNew: newCardId === d.id,
+    // On the "All" view the tags are just noise across every card — hide them there;
+    // show them when a specific tag filter is active.
+    showTags: activeTag !== null,
   });
 
   return (
