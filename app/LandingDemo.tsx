@@ -33,17 +33,12 @@ export default function LandingDemo({ diagrams }: { diagrams: Demo[] }) {
       </svg>
 
       <div style={{ position: "relative", zIndex: 1, maxWidth: 1120, margin: "0 auto", padding: "0 24px 80px" }}>
-        {/* Header */}
-        <header style={{ height: 64, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+        {/* Header — showcase only, no sign-in (login is owner-only). */}
+        <header style={{ height: 64, display: "flex", alignItems: "center" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
             <Image src="/icon-512.png" alt="Diagrams" width={32} height={32} priority style={{ borderRadius: 8 }} />
             <span style={{ fontSize: 17, fontWeight: 800, letterSpacing: "-0.01em", color: "#111827" }}>Diagrams</span>
           </div>
-          <a href="/login" style={{
-            display: "inline-flex", alignItems: "center", gap: 7, height: 36, padding: "0 16px",
-            fontSize: 13.5, fontWeight: 600, color: "#fff", background: "#111827",
-            borderRadius: 9, textDecoration: "none", boxShadow: "0 2px 8px rgba(15,23,42,0.18)",
-          }}>Sign in</a>
         </header>
 
         {/* Hero */}
@@ -52,9 +47,7 @@ export default function LandingDemo({ diagrams }: { diagrams: Demo[] }) {
             Beautiful sequence diagrams,<br />generated from plain English
           </h1>
           <p style={{ fontSize: 16, color: "#64748b", margin: "0 auto", maxWidth: 520, lineHeight: 1.55 }}>
-            A live demo of what you can build. Browse these freely -{" "}
-            <a href="/login" style={{ color: "#7c3aed", fontWeight: 600, textDecoration: "none" }}>sign in</a>{" "}
-            to create and save your own.
+            A live gallery of what this app builds - real sequence diagrams from plain English.
           </p>
         </section>
 
