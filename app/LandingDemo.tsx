@@ -33,9 +33,9 @@ export default function LandingDemo({ diagrams }: { diagrams: Demo[] }) {
         <line className="ld-life" x1="820" y1="0" x2="820" y2="800" stroke="#22c55e" strokeWidth="3" strokeDasharray="10 14" opacity="0.16" style={{ animationDuration: "40s" }} />
       </svg>
 
-      <div style={{ position: "relative", zIndex: 1, maxWidth: 1120, margin: "0 auto", padding: "0 24px 80px" }}>
+      <div style={{ position: "relative", zIndex: 1, maxWidth: 1120, margin: "0 auto", padding: "0 24px 22px" }}>
         {/* Header — showcase only, no sign-in (login is owner-only). */}
-        <header style={{ height: 64, display: "flex", alignItems: "center" }}>
+        <header style={{ height: 52, display: "flex", alignItems: "center" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
             <Image src="/icon-512.png" alt="Diagrams" width={32} height={32} priority style={{ borderRadius: 8 }} />
             <span style={{ fontSize: 17, fontWeight: 800, letterSpacing: "-0.01em", color: "#111827" }}>Diagrams</span>
@@ -43,19 +43,19 @@ export default function LandingDemo({ diagrams }: { diagrams: Demo[] }) {
         </header>
 
         {/* Hero */}
-        <section className="ld-in" style={{ textAlign: "center", padding: "40px 0 30px" }}>
-          <h1 style={{ fontSize: 40, lineHeight: 1.1, fontWeight: 800, letterSpacing: "-0.03em", color: "#0f172a", margin: "0 0 14px" }}>
+        <section className="ld-in" style={{ textAlign: "center", padding: "18px 0 16px" }}>
+          <h1 style={{ fontSize: 29, lineHeight: 1.12, fontWeight: 800, letterSpacing: "-0.03em", color: "#0f172a", margin: "0 0 8px" }}>
             Beautiful sequence diagrams,<br />generated from plain English
           </h1>
-          <p style={{ fontSize: 16, color: "#64748b", margin: "0 auto", maxWidth: 600, lineHeight: 1.55 }}>
+          <p style={{ fontSize: 14, color: "#64748b", margin: "0 auto", maxWidth: 620, lineHeight: 1.45 }}>
             AI-friendly and AI-integrated - AI agents generate diagrams like these live through an MCP server, or you describe a flow in natural language and watch it render in real time.
           </p>
-          <div style={{ display: "flex", gap: 9, justifyContent: "center", flexWrap: "wrap", marginTop: 18 }}>
+          <div style={{ display: "flex", gap: 8, justifyContent: "center", flexWrap: "wrap", marginTop: 11 }}>
             {[
               ["#8b5cf6", "AI-generated via MCP"],
               ["#14b8a6", "Natural language → live render"],
             ].map(([c, label]) => (
-              <span key={label} style={{ display: "inline-flex", alignItems: "center", gap: 7, fontSize: 12.5, fontWeight: 600, color: "#374151", background: "#fff", border: "1px solid #e6e8ee", borderRadius: 20, padding: "6px 13px", boxShadow: "0 1px 2px rgba(15,23,42,0.04)" }}>
+              <span key={label} style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 12, fontWeight: 600, color: "#374151", background: "#fff", border: "1px solid #e6e8ee", borderRadius: 20, padding: "5px 11px", boxShadow: "0 1px 2px rgba(15,23,42,0.04)" }}>
                 <span style={{ width: 7, height: 7, borderRadius: "50%", background: c }} />{label}
               </span>
             ))}
@@ -64,7 +64,7 @@ export default function LandingDemo({ diagrams }: { diagrams: Demo[] }) {
 
         {/* Gallery */}
         {demos.length > 0 && (
-          <section className="ld-grid ld-in" style={{ display: "grid", gap: 16 }}>
+          <section className="ld-grid ld-in" style={{ display: "grid", gap: 12 }}>
             {demos.map((d, i) => (
               <a key={d.id} href={`/d/${d.id}`} className="ld-card" style={{
                 display: "flex", flexDirection: "column", background: "#fff",
@@ -72,10 +72,10 @@ export default function LandingDemo({ diagrams }: { diagrams: Demo[] }) {
                 textDecoration: "none", boxShadow: "0 1px 4px rgba(15,23,42,0.05)",
                 animationDelay: `${0.05 * i}s`,
               }}>
-                <div style={{ padding: "13px 16px 10px", display: "flex", alignItems: "center", gap: 8, borderBottom: "1px solid #f1f2f6" }}>
-                  <span style={{ fontSize: 13.5, fontWeight: 700, color: "#111827", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{d.title}</span>
+                <div style={{ padding: "8px 13px 7px", display: "flex", alignItems: "center", gap: 8, borderBottom: "1px solid #f1f2f6" }}>
+                  <span style={{ fontSize: 13, fontWeight: 700, color: "#111827", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{d.title}</span>
                 </div>
-                <div style={{ height: 180, background: "#fbfbfd", display: "flex", alignItems: "center", justifyContent: "center", padding: 16, overflow: "hidden" }}>
+                <div style={{ height: 116, background: "#fbfbfd", display: "flex", alignItems: "center", justifyContent: "center", padding: 12, overflow: "hidden" }}>
                   {/* Public SVG render — sharp at any size, no auth needed. */}
                   <img src={`/svg/${d.id}`} alt={d.title} loading="lazy"
                     style={{ maxWidth: "100%", maxHeight: "100%", objectFit: "contain" }} />
@@ -85,9 +85,6 @@ export default function LandingDemo({ diagrams }: { diagrams: Demo[] }) {
           </section>
         )}
 
-        <p style={{ textAlign: "center", fontSize: 12.5, color: "#94a3b8", marginTop: 34 }}>
-          Click any diagram to open the full view.
-        </p>
         <SocialFooter />
       </div>
 

@@ -42,7 +42,7 @@ const LINKS: { href: string; label: string; icon: React.ReactNode }[] = [
 
 export default function SocialFooter() {
   return (
-    <footer style={{ borderTop: "1px solid #e6e8ee", marginTop: 44, paddingTop: 26, display: "flex", flexDirection: "column", alignItems: "center", gap: 13 }}>
+    <footer style={{ borderTop: "1px solid #e6e8ee", marginTop: 20, paddingTop: 16, display: "flex", flexDirection: "column", alignItems: "center", gap: 10 }}>
       <style>{`.sf-ico{transition:color .12s,border-color .12s,box-shadow .12s,transform .12s}.sf-ico:hover{color:#111827;border-color:#cbd0dc;box-shadow:0 3px 10px rgba(15,23,42,.09);transform:translateY(-1px)}`}</style>
       <div style={{ display: "flex", gap: 10 }}>
         {LINKS.map(l => (
