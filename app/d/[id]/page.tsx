@@ -52,27 +52,41 @@ export default async function DiagramPage({ params }: { params: Promise<{ id: st
   const { svg, title } = render(row);
 
   return (
-    <main style={{ minHeight: "100dvh", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 24, padding: "32px 20px", background: "linear-gradient(135deg,#0f0a1e 0%,#1d1140 55%,#2e0f6b 100%)" }}>
-      <header style={{ display: "flex", alignItems: "center", gap: 12 }}>
-        <div style={{ display: "flex", gap: 6 }}>
-          <span style={{ width: 22, height: 13, background: "#fb7185", borderRadius: 3 }} />
-          <span style={{ width: 22, height: 13, background: "#a78bfa", borderRadius: 3 }} />
-          <span style={{ width: 22, height: 13, background: "#34d399", borderRadius: 3 }} />
+    <main style={{ minHeight: "100dvh", background: "#eceef2", fontFamily: "system-ui,-apple-system,sans-serif" }}>
+      {/* Slim top bar — logo + demo/sign-in, no editing chrome. */}
+      <header style={{
+        height: 56, display: "flex", alignItems: "center", justifyContent: "space-between",
+        padding: "0 20px", background: "#fff", borderBottom: "1px solid #e5e7eb",
+        position: "sticky", top: 0, zIndex: 10,
+      }}>
+        <a href="/demo" style={{ display: "flex", alignItems: "center", gap: 8, textDecoration: "none" }}>
+          <span style={{ display: "flex", gap: 4 }}>
+            <span style={{ width: 16, height: 10, background: "#ef4444", borderRadius: 2 }} />
+            <span style={{ width: 16, height: 10, background: "#eab308", borderRadius: 2 }} />
+            <span style={{ width: 16, height: 10, background: "#22c55e", borderRadius: 2 }} />
+          </span>
+          <span style={{ fontSize: 15, fontWeight: 800, letterSpacing: "-0.01em", color: "#111827" }}>Diagrams</span>
+        </a>
+        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          <a href={`/svg/${id}`} style={{ fontSize: 13, fontWeight: 600, color: "#4b5563", textDecoration: "none" }}>Download SVG</a>
+          <a href="/login" style={{
+            display: "inline-flex", alignItems: "center", height: 34, padding: "0 15px",
+            fontSize: 13, fontWeight: 600, color: "#fff", background: "#111827",
+            borderRadius: 8, textDecoration: "none",
+          }}>Sign in</a>
         </div>
-        <span style={{ fontSize: 18, fontWeight: 800, letterSpacing: 1, color: "rgba(255,255,255,0.92)" }}>Diagrams</span>
       </header>
 
-      <h1 style={{ margin: 0, color: "#fff", fontSize: 28, fontWeight: 800, letterSpacing: -0.5, textAlign: "center", maxWidth: 900 }}>{title}</h1>
-
-      <div
-        style={{ width: "100%", maxWidth: 1100, background: "#fff", borderRadius: 20, padding: 24, boxShadow: "0 24px 70px rgba(0,0,0,0.45)", overflow: "auto" }}
-        dangerouslySetInnerHTML={{ __html: svg }}
-      />
-
-      <nav style={{ display: "flex", gap: 12, flexWrap: "wrap", justifyContent: "center" }}>
-        <a href={`/?id=${id}`} style={{ padding: "10px 20px", borderRadius: 999, background: "rgba(139,92,246,0.25)", border: "1px solid rgba(139,92,246,0.5)", color: "#d8b4fe", fontSize: 15, fontWeight: 600, textDecoration: "none" }}>Open in editor</a>
-        <a href={`/svg/${id}`} style={{ padding: "10px 20px", borderRadius: 999, background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.18)", color: "rgba(255,255,255,0.85)", fontSize: 15, fontWeight: 600, textDecoration: "none" }}>Download SVG</a>
-      </nav>
+      {/* Clean, light, full-width diagram — the whole point of the page. */}
+      <div style={{ maxWidth: 1240, margin: "0 auto", padding: "28px 20px 64px" }}>
+        <div
+          style={{ background: "#fff", borderRadius: 16, border: "1px solid #e5e7eb", padding: "28px 24px", boxShadow: "0 1px 3px rgba(15,23,42,0.06)", overflowX: "auto" }}
+          dangerouslySetInnerHTML={{ __html: svg }}
+        />
+        <p style={{ textAlign: "center", fontSize: 13, color: "#94a3b8", marginTop: 22 }}>
+          Made with Diagrams · <a href="/login" style={{ color: "#7c3aed", fontWeight: 600, textDecoration: "none" }}>sign in</a> to create your own
+        </p>
+      </div>
     </main>
   );
 }

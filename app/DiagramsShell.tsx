@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import Image from "next/image";
 import { getSession } from "next-auth/react";
 import DiagramsClient, { type ShellUser } from "./DiagramsClient";
-import LandingDemo from "./LandingDemo";
+import LoginLanding from "./LoginLanding";
 
 type Diagram = {
   id: string; title: string; slug: string;
@@ -69,7 +69,7 @@ export default function DiagramsShell({ initial }: { initial?: { user: ShellUser
     );
   }
 
-  if (!user) return <LandingDemo diagrams={diagrams} />;
+  if (!user) return <LoginLanding />;
 
   return <DiagramsClient user={user} diagrams={diagrams} />;
 }
