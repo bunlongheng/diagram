@@ -8,7 +8,7 @@ type Demo = { id: string; title: string; diagram_type: string };
 // a single Sign in call to action. No login is forced — strangers browse freely;
 // only creating your own needs an account (/login).
 export default function LandingDemo({ diagrams }: { diagrams: Demo[] }) {
-  const demos = diagrams.slice(0, 24);
+  const demos = diagrams.slice(0, 8);
 
   return (
     <div style={{
@@ -32,7 +32,7 @@ export default function LandingDemo({ diagrams }: { diagrams: Demo[] }) {
         <line className="ld-life" x1="820" y1="0" x2="820" y2="800" stroke="#22c55e" strokeWidth="3" strokeDasharray="10 14" opacity="0.16" style={{ animationDuration: "40s" }} />
       </svg>
 
-      <div style={{ position: "relative", zIndex: 1, maxWidth: 1440, margin: "0 auto", padding: "0 24px 80px" }}>
+      <div style={{ position: "relative", zIndex: 1, maxWidth: 1120, margin: "0 auto", padding: "0 24px 80px" }}>
         {/* Header */}
         <header style={{ height: 64, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
@@ -60,7 +60,7 @@ export default function LandingDemo({ diagrams }: { diagrams: Demo[] }) {
 
         {/* Gallery */}
         {demos.length > 0 && (
-          <section className="ld-grid ld-in" style={{ display: "grid", gap: 14 }}>
+          <section className="ld-grid ld-in" style={{ display: "grid", gap: 16 }}>
             {demos.map((d, i) => (
               <a key={d.id} href={`/d/${d.id}`} className="ld-card" style={{
                 display: "flex", flexDirection: "column", background: "#fff",
@@ -69,10 +69,9 @@ export default function LandingDemo({ diagrams }: { diagrams: Demo[] }) {
                 animationDelay: `${0.05 * i}s`,
               }}>
                 <div style={{ padding: "13px 16px 10px", display: "flex", alignItems: "center", gap: 8, borderBottom: "1px solid #f1f2f6" }}>
-                  <span style={{ width: 7, height: 7, borderRadius: "50%", background: "#22c55e", flexShrink: 0 }} />
                   <span style={{ fontSize: 13.5, fontWeight: 700, color: "#111827", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{d.title}</span>
                 </div>
-                <div style={{ height: 128, background: "#fbfbfd", display: "flex", alignItems: "center", justifyContent: "center", padding: 10, overflow: "hidden" }}>
+                <div style={{ height: 180, background: "#fbfbfd", display: "flex", alignItems: "center", justifyContent: "center", padding: 16, overflow: "hidden" }}>
                   {/* Public SVG render — sharp at any size, no auth needed. */}
                   <img src={`/svg/${d.id}`} alt={d.title} loading="lazy"
                     style={{ maxWidth: "100%", maxHeight: "100%", objectFit: "contain" }} />
@@ -96,8 +95,10 @@ export default function LandingDemo({ diagrams }: { diagrams: Demo[] }) {
         .ld-card:hover { transform: translateY(-3px); border-color: #cbd0dc; box-shadow: 0 12px 32px rgba(15,23,42,0.12); }
         .ld-life { animation: ldFlow 48s linear infinite; }
         .ld-blob { animation: ldBlob 18s ease-in-out infinite; }
-        .ld-grid { grid-template-columns: repeat(auto-fill, minmax(168px, 1fr)); }
-        @media (max-width: 480px) { .ld-grid { grid-template-columns: repeat(2, 1fr); } h1 { font-size: 30px !important; } }
+        .ld-grid { grid-template-columns: repeat(4, 1fr); }
+        @media (max-width: 1024px) { .ld-grid { grid-template-columns: repeat(3, 1fr); } }
+        @media (max-width: 720px) { .ld-grid { grid-template-columns: repeat(2, 1fr); } }
+        @media (max-width: 480px) { .ld-grid { grid-template-columns: 1fr; } h1 { font-size: 30px !important; } }
         @media (prefers-reduced-motion: reduce) {
           .ld-in, .ld-card, .ld-life, .ld-blob { animation: none !important; opacity: 1 !important; }
         }
