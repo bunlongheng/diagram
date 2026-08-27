@@ -45,9 +45,19 @@ export default function LandingDemo({ diagrams }: { diagrams: Demo[] }) {
         {/* Hero */}
         <section className="ld-in" style={{ textAlign: "center", padding: "18px 0 16px" }}>
           <h1 style={{ fontSize: 34, lineHeight: 1.1, fontWeight: 800, letterSpacing: "-0.03em", color: "#0f172a", margin: "0 0 8px" }}>
-            Beautiful Diagrams
+            <span className="ld-flip">
+              <span>Beautiful</span>
+              <span>Clean</span>
+              <span>Clear</span>
+              <span>Readable</span>
+              <span>Easy</span>
+              <span>Elegant</span>
+            </span>{" "}Diagrams
           </h1>
-          <div style={{ display: "flex", gap: 8, justifyContent: "center", flexWrap: "wrap", marginTop: 14 }}>
+          <p style={{ fontSize: 14, color: "#64748b", margin: "8px auto 0", maxWidth: 720, lineHeight: 1.45 }}>
+            AI-friendly and AI-integrated - agents create these via MCP or plain English.
+          </p>
+          <div style={{ display: "flex", gap: 8, justifyContent: "center", flexWrap: "wrap", marginTop: 12 }}>
             {[
               ["#8b5cf6", "AI-generated via MCP"],
               ["#14b8a6", "Natural language → live render"],
@@ -72,10 +82,11 @@ export default function LandingDemo({ diagrams }: { diagrams: Demo[] }) {
                 <div style={{ padding: "8px 13px 7px", display: "flex", alignItems: "center", gap: 8, borderBottom: "1px solid #f1f2f6", flexShrink: 0 }}>
                   <span style={{ fontSize: 13, fontWeight: 700, color: "#111827", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{d.title}</span>
                 </div>
-                <div style={{ flex: 1, minHeight: 0, background: "#fbfbfd", display: "flex", alignItems: "center", justifyContent: "center", padding: 16, overflow: "hidden" }}>
-                  {/* Public SVG render — sharp at any size, no auth needed. */}
+                <div style={{ flex: 1, minHeight: 0, background: "#fff", display: "flex", alignItems: "center", justifyContent: "center", padding: 16, overflow: "hidden" }}>
+                  {/* Public SVG render — fill the full height so every diagram is the
+                      same height across cards; width scales, any excess is clipped. */}
                   <img src={`/svg/${d.id}`} alt={d.title} loading="lazy"
-                    style={{ maxWidth: "100%", maxHeight: "100%", objectFit: "contain" }} />
+                    style={{ height: "100%", width: "auto", maxWidth: "none", objectFit: "contain" }} />
                 </div>
               </a>
             ))}
@@ -95,10 +106,38 @@ export default function LandingDemo({ diagrams }: { diagrams: Demo[] }) {
         .ld-card:hover { transform: translateY(-3px); border-color: #cbd0dc; box-shadow: 0 12px 32px rgba(15,23,42,0.12); }
         .ld-life { animation: ldFlow 48s linear infinite; }
         .ld-blob { animation: ldBlob 18s ease-in-out infinite; }
+        /* Rotating word before "Diagrams" — CSS-only, 6 words, ~2s each. */
+        .ld-flip { display: inline-grid; justify-items: end; vertical-align: bottom; color: #7c3aed; }
+        .ld-flip > span { grid-area: 1 / 1; opacity: 0; white-space: nowrap; animation: ldflip 12s infinite; }
+        .ld-flip > span:nth-child(1) { animation-delay: 0s; }
+        .ld-flip > span:nth-child(2) { animation-delay: 2s; }
+        .ld-flip > span:nth-child(3) { animation-delay: 4s; }
+        .ld-flip > span:nth-child(4) { animation-delay: 6s; }
+        .ld-flip > span:nth-child(5) { animation-delay: 8s; }
+        .ld-flip > span:nth-child(6) { animation-delay: 10s; }
+        @keyframes ldflip {
+          0%    { opacity: 0; transform: translateY(14px); }
+          2.5%  { opacity: 1; transform: translateY(0); }
+          14%   { opacity: 1; transform: translateY(0); }
+          16.6% { opacity: 0; transform: translateY(-14px); }
+          100%  { opacity: 0; transform: translateY(-14px); }
+        }
+        @media (prefers-reduced-motion: reduce) {
+          .ld-flip > span { animation: none; opacity: 0; }
+          .ld-flip > span:first-child { opacity: 1; }
+        }
+
+        /* Desktop: 8 cards (4 x 2). iPad: 6 (3 x 2). Phone: 4 (2 x 2). */
         .ld-grid { grid-template-columns: repeat(4, 1fr); grid-auto-rows: 1fr; }
-        @media (max-width: 1024px) { .ld-grid { grid-template-columns: repeat(3, 1fr); } }
-        @media (max-width: 720px) { .ld-grid { grid-template-columns: repeat(2, 1fr); } }
-        @media (max-width: 480px) { .ld-grid { grid-template-columns: 1fr; } h1 { font-size: 30px !important; } }
+        @media (max-width: 1024px) {
+          .ld-grid { grid-template-columns: repeat(3, 1fr); }
+          .ld-card:nth-child(n+7) { display: none !important; }
+        }
+        @media (max-width: 720px) {
+          .ld-grid { grid-template-columns: repeat(2, 1fr); }
+          .ld-card:nth-child(n+5) { display: none !important; }
+          h1 { font-size: 30px !important; }
+        }
         @media (prefers-reduced-motion: reduce) {
           .ld-in, .ld-card, .ld-life, .ld-blob { animation: none !important; opacity: 1 !important; }
         }
