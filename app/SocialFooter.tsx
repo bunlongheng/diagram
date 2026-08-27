@@ -5,10 +5,9 @@ const LINKS: { href: string; label: string; icon: React.ReactNode }[] = [
     href: "https://bunlongheng.com",
     label: "Portfolio",
     icon: (
-      // Brand "B" silhouette — monochrome (currentColor) to match the other icons.
-      <svg width="14" height="14" viewBox="0 0 24 24" aria-hidden="true">
-        <text x="12" y="18.5" textAnchor="middle" fontFamily="system-ui, -apple-system, 'Segoe UI', sans-serif" fontSize="21" fontWeight="800" fill="currentColor">B</text>
-      </svg>
+      // Real brand "B" letterform, filled with currentColor via CSS mask so it's
+      // grey and darkens on hover exactly like the other icons.
+      <span aria-hidden="true" style={{ display: "block", width: 14, height: 14, backgroundColor: "currentColor", WebkitMaskImage: "url(/bunlong-b.png)", maskImage: "url(/bunlong-b.png)", WebkitMaskRepeat: "no-repeat", maskRepeat: "no-repeat", WebkitMaskPosition: "center", maskPosition: "center", WebkitMaskSize: "contain", maskSize: "contain" }} />
     ),
   },
   {
@@ -54,7 +53,7 @@ export default function SocialFooter() {
         ))}
       </div>
       <span style={{ fontSize: 12.5, color: "#94a3b8" }}>
-        Made with Diagrams · Built by <a href="https://bunlongheng.com" target="_blank" rel="noopener noreferrer" style={{ color: "#7c3aed", fontWeight: 600, textDecoration: "none" }}>Bunlong Heng</a>
+        Made with Diagrams · Built by <a href="https://bunlongheng.com" target="_blank" rel="noopener noreferrer" style={{ color: "#7c3aed", fontWeight: 600, textDecoration: "none" }}>Bunlong</a>
       </span>
     </footer>
   );
