@@ -14,7 +14,7 @@ export default async function DemoPage() {
       WHERE is_public = true
         AND NOT ('YouTube' = ANY(COALESCE(tags, '{}')))
       ORDER BY updated_at DESC
-      LIMIT 12`
+      LIMIT 24`
   );
   const diagrams = JSON.parse(JSON.stringify(rows)) as Demo[];
   return <LandingDemo diagrams={diagrams} />;
