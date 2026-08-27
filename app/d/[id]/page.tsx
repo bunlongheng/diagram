@@ -67,24 +67,21 @@ export default async function DiagramPage({ params }: { params: Promise<{ id: st
           </span>
           <span style={{ fontSize: 15, fontWeight: 800, letterSpacing: "-0.01em", color: "#111827" }}>Diagrams</span>
         </a>
-        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-          <a href={`/svg/${id}`} style={{ fontSize: 13, fontWeight: 600, color: "#4b5563", textDecoration: "none" }}>Download SVG</a>
-          <a href="/login" style={{
-            display: "inline-flex", alignItems: "center", height: 34, padding: "0 15px",
-            fontSize: 13, fontWeight: 600, color: "#fff", background: "#111827",
-            borderRadius: 8, textDecoration: "none",
-          }}>Sign in</a>
-        </div>
+        <a href={`/svg/${id}`} style={{ fontSize: 13, fontWeight: 600, color: "#4b5563", textDecoration: "none" }}>Download SVG</a>
       </header>
 
       {/* Clean, light, full-width diagram — the whole point of the page. */}
       <div style={{ maxWidth: 1240, margin: "0 auto", padding: "28px 20px 64px" }}>
+        {/* auto-fit: the SVG has a viewBox, so max-width:100% + height:auto scales
+            the whole diagram to fit the card on load — nothing chopped off. */}
+        <style>{`.dgview svg { max-width: 100%; height: auto; display: block; margin: 0 auto; }`}</style>
         <div
-          style={{ background: "#fff", borderRadius: 16, border: "1px solid #e5e7eb", padding: "28px 24px", boxShadow: "0 1px 3px rgba(15,23,42,0.06)", overflowX: "auto" }}
+          className="dgview"
+          style={{ background: "#fff", borderRadius: 16, border: "1px solid #e5e7eb", padding: "24px", boxShadow: "0 1px 3px rgba(15,23,42,0.06)", overflow: "hidden" }}
           dangerouslySetInnerHTML={{ __html: svg }}
         />
         <p style={{ textAlign: "center", fontSize: 13, color: "#94a3b8", marginTop: 22 }}>
-          Made with Diagrams · <a href="/login" style={{ color: "#7c3aed", fontWeight: 600, textDecoration: "none" }}>sign in</a> to create your own
+          Made with Diagrams
         </p>
       </div>
     </main>
