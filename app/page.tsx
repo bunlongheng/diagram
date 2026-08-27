@@ -3,6 +3,7 @@ import { auth } from "@/auth";
 import { resolveOwnerIdServer } from "@/lib/auth-owner";
 import DiagramsShell from "./DiagramsShell";
 import DiagramEditor from "./DiagramEditor";
+import LoginLanding from "./LoginLanding";
 import type { ShellUser } from "./DiagramsClient";
 
 // The "/" route. ?id= / ?new / ?data open the client editor; everything else is
@@ -17,38 +18,28 @@ export default async function Home({
   const sp = await searchParams;
   if ("id" in sp || "new" in sp || "data" in sp) return <DiagramEditor />;
 
-  // ?demo lets the owner preview the public landing (only ever shows public data).
-  const wantDemo = "demo" in sp;
-  const uid = wantDemo ? null : await resolveOwnerIdServer();
-  let user: ShellUser | null = null;
-  let diagrams: Diagram[] = [];
+  const uid = await resolveOwnerIdServer();
 
-  if (uid) {
-    // Owner: every diagram (public + private), full editor.
-    const [session, result] = await Promise.all([
-      auth(),
-      db.query(
-        "SELECT id, title, slug, diagram_type, created_at, updated_at, code, tags, settings->>'youtubeId' AS youtube_id FROM diagrams WHERE user_id = $1 ORDER BY updated_at DESC",
-        [uid]
-      ),
-    ]);
-    // Match NextResponse.json: Date columns serialize to ISO strings for the client.
-    diagrams = JSON.parse(JSON.stringify(result.rows));
-    user = {
-      email: session?.user?.email ?? "owner",
-      user_metadata: {
-        full_name: session?.user?.name ?? undefined,
-        avatar_url: session?.user?.image ?? undefined,
-      },
-    };
-  } else {
-    // Logged-out visitor: a public demo gallery (best 6 public diagrams). No login
-    // is forced — the whole point is that strangers can see these as a demo.
-    const result = await db.query(
-      "SELECT id, title, slug, diagram_type, created_at, updated_at, code, tags, settings->>'youtubeId' AS youtube_id FROM diagrams WHERE is_public = true ORDER BY updated_at DESC LIMIT 6"
-    );
-    diagrams = JSON.parse(JSON.stringify(result.rows));
-  }
+  // Logged-out visitor: the landing / login splash. The public demo lives at /demo.
+  if (!uid) return <LoginLanding />;
+
+  // Owner: every diagram (public + private), full editor.
+  const [session, result] = await Promise.all([
+    auth(),
+    db.query(
+      "SELECT id, title, slug, diagram_type, created_at, updated_at, code, tags, settings->>'youtubeId' AS youtube_id FROM diagrams WHERE user_id = $1 ORDER BY updated_at DESC",
+      [uid]
+    ),
+  ]);
+  // Match NextResponse.json: Date columns serialize to ISO strings for the client.
+  const diagrams: Diagram[] = JSON.parse(JSON.stringify(result.rows));
+  const user: ShellUser = {
+    email: session?.user?.email ?? "owner",
+    user_metadata: {
+      full_name: session?.user?.name ?? undefined,
+      avatar_url: session?.user?.image ?? undefined,
+    },
+  };
 
   return <DiagramsShell initial={{ user, diagrams }} />;
 }
