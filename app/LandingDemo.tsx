@@ -33,7 +33,7 @@ export default function LandingDemo({ diagrams }: { diagrams: Demo[] }) {
         <line className="ld-life" x1="820" y1="0" x2="820" y2="800" stroke="#22c55e" strokeWidth="3" strokeDasharray="10 14" opacity="0.16" style={{ animationDuration: "40s" }} />
       </svg>
 
-      <div style={{ position: "relative", zIndex: 1, maxWidth: 1120, margin: "0 auto", padding: "0 24px 22px" }}>
+      <div style={{ position: "relative", zIndex: 1, maxWidth: 1120, margin: "0 auto", padding: "0 24px 22px", minHeight: "100%", boxSizing: "border-box", display: "flex", flexDirection: "column" }}>
         {/* Header — showcase only, no sign-in (login is owner-only). */}
         <header style={{ height: 52, display: "flex", alignItems: "center" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
@@ -85,7 +85,8 @@ export default function LandingDemo({ diagrams }: { diagrams: Demo[] }) {
           </section>
         )}
 
-        <SocialFooter />
+        {/* marginTop:auto pins the footer to the bottom of the viewport */}
+        <div style={{ marginTop: "auto" }}><SocialFooter /></div>
       </div>
 
       <style>{`
