@@ -23,6 +23,7 @@ type Diagram = {
 
 // ── Shared (public) ───────────────────────────────────────────────────────────
 const LS_SHARED = "diagram:shared";
+const LS_VIEW = "diagram:view"; // "list" (default) | "grid"
 function loadShared(): Set<string> {
   try { return new Set(JSON.parse(localStorage.getItem(LS_SHARED) ?? "[]")); } catch { return new Set(); }
 }
@@ -789,6 +790,59 @@ function DiagramCard({ d, isShared, onOpen, onDelete, onRename, onTag, onViewCod
   );
 }
 
+// ── Diagram list row (compact "list" view) ───────────────────────────────────
+const rowActionBtn = { width: 28, height: 28, borderRadius: 7, border: "1px solid #e4e6e8", background: "#ffffff", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 1px 3px rgba(0,0,0,0.06)", flexShrink: 0 } as const;
+function DiagramRow({ d, isShared, onOpen, onDelete, onRename, onTag, onViewCode, deleting, tagColorMap, isNew, showTags }: {
+  d: Diagram; isShared: boolean;
+  onOpen: () => void; onDelete: () => void; onRename: () => void; onTag: () => void; onViewCode: () => void;
+  deleting: boolean; tagColorMap: Map<string, typeof TAG_PALETTE[0]>; isNew: boolean; showTags: boolean;
+}) {
+  const [hovered, setHovered] = useState(false);
+  const tags = d.tags ?? [];
+  return (
+    <div onClick={onOpen} onMouseEnter={() => setHovered(true)} onMouseLeave={() => setHovered(false)}
+      role="button" tabIndex={0} aria-label={`Open ${d.title}`}
+      onKeyDown={e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onOpen(); } }}
+      style={{ display: "flex", alignItems: "center", gap: 12, padding: "9px 14px", borderBottom: "1px solid #eef0f2", cursor: "pointer", background: hovered ? "#f7f8fa" : (isNew ? "#f5f3ff" : "#ffffff"), transition: "background 0.1s" }}>
+      {/* Type tile */}
+      <div style={{ width: 32, height: 32, borderRadius: 8, background: "#fbfbfd", border: "1px solid #e9ebf0", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+        {d.youtube_id
+          ? <Youtube size={15} color="#ff0000" />
+          : <svg width={15} height={15} viewBox="0 0 24 24" fill="none" stroke="#9aa0a6" strokeWidth={2} strokeLinecap="round"><line x1="6" y1="3" x2="6" y2="21"/><line x1="18" y1="3" x2="18" y2="21"/><path d="M6 9h9l-2-2M6 9l2 2"/><path d="M18 15H9l2-2M18 15l-2 2"/></svg>}
+      </div>
+      {/* Title + meta (tiered) */}
+      <div style={{ minWidth: 0, flex: 1 }}>
+        <div style={{ fontSize: 13.5, fontWeight: 600, color: "#1c1e21", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{d.title}</div>
+        <div style={{ fontSize: 11.5, color: "#9aa0a6", marginTop: 1 }}>{d.diagram_type || "sequence"} · {relativeTime(d.updated_at ?? d.created_at)}</div>
+      </div>
+      {/* Tags — only when a specific tag filter is active */}
+      {showTags && tags.length > 0 && (
+        <div style={{ display: "flex", gap: 4, flexShrink: 0 }} onClick={e => { e.stopPropagation(); onTag(); }}>
+          {tags.slice(0, 3).map(t => { const s = tagColorMap.get(t) ?? TAG_PALETTE[0]; return (
+            <span key={t} style={{ fontSize: 11, fontWeight: 700, padding: "1px 6px 1px 4px", borderRadius: 20, background: s.bg, color: s.text, border: `1px solid ${s.border}`, display: "inline-flex", alignItems: "center", gap: 3 }}><TagIcon tag={t} size={9} />{t}</span>
+          ); })}
+        </div>
+      )}
+      {isShared && <span style={{ fontSize: 9, fontWeight: 600, color: "#65676b", background: "#f0f1f3", border: "1px solid #e4e6e8", borderRadius: 4, padding: "2px 6px", flexShrink: 0 }}>Public</span>}
+      {/* Actions on hover */}
+      <div style={{ display: "flex", gap: 4, flexShrink: 0, opacity: hovered ? 1 : 0, transition: "opacity 0.1s" }} onClick={e => e.stopPropagation()}>
+        <button onClick={onRename} title="Rename" aria-label="Rename" style={rowActionBtn}>
+          <svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke="#8a8d91" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg>
+        </button>
+        <button onClick={onViewCode} title="View code" aria-label="View code" style={rowActionBtn}>
+          <svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke="#8a8d91" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+        </button>
+        <button onClick={onTag} title="Tags" aria-label="Edit tags" style={rowActionBtn}>
+          <svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke="#8a8d91" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><path d="M12 2H2v10l9.29 9.29a1 1 0 0 0 1.41 0l7.3-7.3a1 1 0 0 0 0-1.41L12 2z"/><circle cx="7" cy="7" r="1.5" fill="#8a8d91"/></svg>
+        </button>
+        <button onClick={onDelete} title="Delete" aria-label="Delete" disabled={deleting} style={{ ...rowActionBtn, opacity: deleting ? 0.5 : 1 }}>
+          <svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke="#dc2626" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/></svg>
+        </button>
+      </div>
+    </div>
+  );
+}
+
 // ── Avatar cache ──────────────────────────────────────────────────────────────
 const LS_KEY = "diagrams_user_cache";
 
@@ -812,6 +866,12 @@ export default function DiagramsClient({ user, diagrams: initial }: { user: Shel
   const [codeDiagram, setCodeDiagram] = useState<Diagram | null>(null);
   const [codeCopied, setCodeCopied] = useState(false);
   const [activeTag, setActiveTag] = useState<string | null>(null);
+  // View mode: "list" (default) vs "grid" thumbnails. Persisted per browser.
+  const [view, setView] = useState<"list" | "grid">(() => {
+    if (typeof window === "undefined") return "list";
+    return localStorage.getItem(LS_VIEW) === "grid" ? "grid" : "list";
+  });
+  const changeView = (v: "list" | "grid") => { setView(v); try { localStorage.setItem(LS_VIEW, v); } catch {} };
   const menuRef = useRef<HTMLDivElement>(null);
 
   const handleAICreated = useCallback((d: Diagram) => {
@@ -1094,9 +1154,36 @@ export default function DiagramsClient({ user, diagrams: initial }: { user: Shel
 
         {allDiagrams.length > 0 && (
           <section>
-            <div className="dc-grid" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))", gap: 12 }}>
-              {allDiagrams.map(d => <DiagramCard key={d.id} {...cardProps(d)} />)}
+            {/* Toolbar: count + list/grid toggle */}
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
+              <span style={{ fontSize: 12.5, color: "#8a8d91", fontWeight: 500 }}>
+                {allDiagrams.length} diagram{allDiagrams.length === 1 ? "" : "s"}
+              </span>
+              <div style={{ display: "flex", gap: 2, background: "#eceef1", borderRadius: 9, padding: 3 }}>
+                {([
+                  ["list", "List view", <svg key="l" width={15} height={15} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><circle cx="3.5" cy="6" r="1.2" fill="currentColor" stroke="none"/><circle cx="3.5" cy="12" r="1.2" fill="currentColor" stroke="none"/><circle cx="3.5" cy="18" r="1.2" fill="currentColor" stroke="none"/></svg>],
+                  ["grid", "Thumbnail view", <svg key="g" width={15} height={15} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>],
+                ] as const).map(([v, label, icon]) => {
+                  const on = view === v;
+                  return (
+                    <button key={v} onClick={() => changeView(v)} title={label} aria-label={label} aria-pressed={on}
+                      style={{ width: 32, height: 27, borderRadius: 7, border: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", background: on ? "#ffffff" : "transparent", color: on ? "#1c1e21" : "#9aa0a6", boxShadow: on ? "0 1px 3px rgba(0,0,0,0.14)" : "none", transition: "all 0.12s" }}>
+                      {icon}
+                    </button>
+                  );
+                })}
+              </div>
             </div>
+
+            {view === "grid" ? (
+              <div className="dc-grid" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))", gap: 12 }}>
+                {allDiagrams.map(d => <DiagramCard key={d.id} {...cardProps(d)} />)}
+              </div>
+            ) : (
+              <div style={{ background: "#ffffff", border: "1px solid #e4e6e8", borderRadius: 12, overflow: "hidden", boxShadow: "0 1px 3px rgba(15,23,42,0.05)" }}>
+                {allDiagrams.map(d => <DiagramRow key={d.id} {...cardProps(d)} />)}
+              </div>
+            )}
           </section>
         )}
       </main>
