@@ -96,8 +96,10 @@ export default function LandingDemo({ diagrams }: { diagrams: Demo[] }) {
         .ld-card:hover { transform: translateY(-3px); border-color: #cbd0dc; box-shadow: 0 12px 32px rgba(15,23,42,0.12); }
         .ld-life { animation: ldFlow 48s linear infinite; }
         .ld-blob { animation: ldBlob 18s ease-in-out infinite; }
-        .ld-grid { grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); }
-        @media (max-width: 560px) { h1 { font-size: 30px !important; } }
+        .ld-grid { grid-template-columns: repeat(4, 1fr); }
+        @media (max-width: 1024px) { .ld-grid { grid-template-columns: repeat(3, 1fr); } }
+        @media (max-width: 720px) { .ld-grid { grid-template-columns: repeat(2, 1fr); } }
+        @media (max-width: 480px) { .ld-grid { grid-template-columns: 1fr; } h1 { font-size: 30px !important; } }
         @media (prefers-reduced-motion: reduce) {
           .ld-in, .ld-card, .ld-life, .ld-blob { animation: none !important; opacity: 1 !important; }
         }
