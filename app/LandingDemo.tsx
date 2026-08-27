@@ -1,5 +1,6 @@
 "use client";
 import Image from "next/image";
+import SocialFooter from "./SocialFooter";
 
 type Demo = { id: string; title: string; diagram_type: string };
 
@@ -46,9 +47,19 @@ export default function LandingDemo({ diagrams }: { diagrams: Demo[] }) {
           <h1 style={{ fontSize: 40, lineHeight: 1.1, fontWeight: 800, letterSpacing: "-0.03em", color: "#0f172a", margin: "0 0 14px" }}>
             Beautiful sequence diagrams,<br />generated from plain English
           </h1>
-          <p style={{ fontSize: 16, color: "#64748b", margin: "0 auto", maxWidth: 520, lineHeight: 1.55 }}>
-            A live gallery of what this app builds - real sequence diagrams from plain English.
+          <p style={{ fontSize: 16, color: "#64748b", margin: "0 auto", maxWidth: 600, lineHeight: 1.55 }}>
+            AI-friendly and AI-integrated - AI agents generate diagrams like these live through an MCP server, or you describe a flow in natural language and watch it render in real time.
           </p>
+          <div style={{ display: "flex", gap: 9, justifyContent: "center", flexWrap: "wrap", marginTop: 18 }}>
+            {[
+              ["#8b5cf6", "AI-generated via MCP"],
+              ["#14b8a6", "Natural language → live render"],
+            ].map(([c, label]) => (
+              <span key={label} style={{ display: "inline-flex", alignItems: "center", gap: 7, fontSize: 12.5, fontWeight: 600, color: "#374151", background: "#fff", border: "1px solid #e6e8ee", borderRadius: 20, padding: "6px 13px", boxShadow: "0 1px 2px rgba(15,23,42,0.04)" }}>
+                <span style={{ width: 7, height: 7, borderRadius: "50%", background: c }} />{label}
+              </span>
+            ))}
+          </div>
         </section>
 
         {/* Gallery */}
@@ -77,6 +88,7 @@ export default function LandingDemo({ diagrams }: { diagrams: Demo[] }) {
         <p style={{ textAlign: "center", fontSize: 12.5, color: "#94a3b8", marginTop: 34 }}>
           Click any diagram to open the full view.
         </p>
+        <SocialFooter />
       </div>
 
       <style>{`

@@ -5,6 +5,7 @@ import { notFound } from "next/navigation";
 import db from "@/lib/db";
 import { parse, buildSvg, DEFAULT_OPTS, DEFAULT_LAYOUT } from "@/lib/svg-renderer";
 import type { Opts, Layout } from "@/lib/svg-renderer";
+import SocialFooter from "../../SocialFooter";
 
 export const revalidate = 300;
 
@@ -83,6 +84,7 @@ export default async function DiagramPage({ params }: { params: Promise<{ id: st
         <p style={{ textAlign: "center", fontSize: 13, color: "#94a3b8", marginTop: 22 }}>
           Made with Diagrams
         </p>
+        <SocialFooter />
       </div>
     </main>
   );
