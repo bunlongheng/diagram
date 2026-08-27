@@ -44,13 +44,10 @@ export default function LandingDemo({ diagrams }: { diagrams: Demo[] }) {
 
         {/* Hero */}
         <section className="ld-in" style={{ textAlign: "center", padding: "18px 0 16px" }}>
-          <h1 style={{ fontSize: 29, lineHeight: 1.12, fontWeight: 800, letterSpacing: "-0.03em", color: "#0f172a", margin: "0 0 8px" }}>
-            Beautiful sequence diagrams,<br />generated from plain English
+          <h1 style={{ fontSize: 34, lineHeight: 1.1, fontWeight: 800, letterSpacing: "-0.03em", color: "#0f172a", margin: "0 0 8px" }}>
+            Beautiful Diagrams
           </h1>
-          <p style={{ fontSize: 14, color: "#64748b", margin: "0 auto", maxWidth: 620, lineHeight: 1.45 }}>
-            AI-friendly and AI-integrated - AI agents generate diagrams like these live through an MCP server, or you describe a flow in natural language and watch it render in real time.
-          </p>
-          <div style={{ display: "flex", gap: 8, justifyContent: "center", flexWrap: "wrap", marginTop: 11 }}>
+          <div style={{ display: "flex", gap: 8, justifyContent: "center", flexWrap: "wrap", marginTop: 14 }}>
             {[
               ["#8b5cf6", "AI-generated via MCP"],
               ["#14b8a6", "Natural language → live render"],
