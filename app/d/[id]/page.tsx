@@ -81,9 +81,6 @@ export default async function DiagramPage({ params }: { params: Promise<{ id: st
           style={{ background: "#fff", borderRadius: 16, border: "1px solid #e5e7eb", padding: "24px", boxShadow: "0 1px 3px rgba(15,23,42,0.06)", overflow: "hidden" }}
           dangerouslySetInnerHTML={{ __html: svg }}
         />
-        <p style={{ textAlign: "center", fontSize: 13, color: "#94a3b8", marginTop: 22 }}>
-          Made with Diagrams
-        </p>
         <SocialFooter />
       </div>
     </main>
