@@ -792,6 +792,13 @@ function DiagramCard({ d, isShared, onOpen, onDelete, onRename, onTag, onViewCod
 
 // ── Diagram list row (compact "list" view) ───────────────────────────────────
 const rowActionBtn = { width: 28, height: 28, borderRadius: 7, border: "1px solid #e4e6e8", background: "#ffffff", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 1px 3px rgba(0,0,0,0.06)", flexShrink: 0 } as const;
+
+// Dynamic letter tile: first letter of the title, colored deterministically from
+// the title (PAL palette) so every diagram gets a stable, distinct chip.
+const LETTER_COLORS = ["#ef4444", "#f97316", "#eab308", "#22c55e", "#14b8a6", "#06b6d4", "#3b82f6", "#8b5cf6", "#ec4899", "#f43f5e", "#84cc16", "#0891b2"];
+function letterFor(title: string) { const m = (title || "").match(/[a-z0-9]/i); return m ? m[0].toUpperCase() : "#"; }
+function colorFor(title: string) { let h = 0; for (let i = 0; i < title.length; i++) h = (Math.imul(h, 31) + title.charCodeAt(i)) >>> 0; return LETTER_COLORS[h % LETTER_COLORS.length]; }
+function tint(hex: string, a: number) { const n = parseInt(hex.slice(1), 16); return `rgba(${(n >> 16) & 255},${(n >> 8) & 255},${n & 255},${a})`; }
 function DiagramRow({ d, isShared, onOpen, onDelete, onRename, onTag, onViewCode, deleting, tagColorMap, isNew, showTags }: {
   d: Diagram; isShared: boolean;
   onOpen: () => void; onDelete: () => void; onRename: () => void; onTag: () => void; onViewCode: () => void;
@@ -804,12 +811,12 @@ function DiagramRow({ d, isShared, onOpen, onDelete, onRename, onTag, onViewCode
       role="button" tabIndex={0} aria-label={`Open ${d.title}`}
       onKeyDown={e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onOpen(); } }}
       style={{ display: "flex", alignItems: "center", gap: 12, padding: "9px 14px", borderBottom: "1px solid #eef0f2", cursor: "pointer", background: hovered ? "#f7f8fa" : (isNew ? "#f5f3ff" : "#ffffff"), transition: "background 0.1s" }}>
-      {/* Type tile */}
-      <div style={{ width: 32, height: 32, borderRadius: 8, background: "#fbfbfd", border: "1px solid #e9ebf0", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-        {d.youtube_id
-          ? <Youtube size={15} color="#ff0000" />
-          : <svg width={15} height={15} viewBox="0 0 24 24" fill="none" stroke="#9aa0a6" strokeWidth={2} strokeLinecap="round"><line x1="6" y1="3" x2="6" y2="21"/><line x1="18" y1="3" x2="18" y2="21"/><path d="M6 9h9l-2-2M6 9l2 2"/><path d="M18 15H9l2-2M18 15l-2 2"/></svg>}
-      </div>
+      {/* Dynamic letter tile — first letter, colored by title */}
+      {(() => { const c = colorFor(d.title || ""); return (
+        <div style={{ width: 32, height: 32, borderRadius: 8, background: tint(c, 0.14), border: `1px solid ${tint(c, 0.28)}`, color: c, fontSize: 14, fontWeight: 800, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+          {letterFor(d.title || "")}
+        </div>
+      ); })()}
       {/* Title + meta (tiered) */}
       <div style={{ minWidth: 0, flex: 1 }}>
         <div style={{ fontSize: 13.5, fontWeight: 600, color: "#1c1e21", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{d.title}</div>
@@ -1060,6 +1067,7 @@ export default function DiagramsClient({ user, diagrams: initial }: { user: Shel
         .dc-card:focus-within .dc-card-actions { opacity: 1; pointer-events: auto; }
         @media (max-width: 640px) {
           .dc-header { padding: 0 16px !important; }
+          .dc-filterbar { padding: 0 16px !important; }
           .dc-search-wrap { flex: 1 !important; width: auto !important; min-width: 0 !important; }
           .dc-search-wrap input { width: 100% !important; }
           .dc-main { padding: 20px 16px 100px !important; }
@@ -1118,7 +1126,8 @@ export default function DiagramsClient({ user, diagrams: initial }: { user: Shel
       {/* ── Tag filter bar ── */}
       {allTags.length > 0 && (
         <div style={{ background: "#ffffff", borderBottom: "1px solid #e4e6e8", height: 40 }}>
-        <div style={{ maxWidth: 1600, margin: "0 auto", padding: "0 32px", height: "100%", display: "flex", alignItems: "center", gap: 6, overflowX: "auto" }}>
+        <div className="dc-filterbar" style={{ maxWidth: 1600, margin: "0 auto", padding: "0 32px", height: "100%", boxSizing: "border-box" }}>
+          <div style={{ height: "100%", display: "flex", alignItems: "center", gap: 6, overflowX: "auto" }}>
           <button onClick={() => setActiveTag(null)}
             style={{ padding: "3px 12px", borderRadius: 20, fontSize: 11, fontWeight: 600, cursor: "pointer", border: `1.5px solid ${!activeTag ? "#1c1e21" : "#e4e6e8"}`, background: !activeTag ? "#1c1e21" : "#f4f5f7", color: !activeTag ? "#fff" : "#65676b", flexShrink: 0, transition: "all 0.12s", display: "flex", alignItems: "center", gap: 5 }}>
             All <span style={{ background: !activeTag ? "rgba(255,255,255,0.25)" : "#e4e6e8", borderRadius: 20, padding: "0 5px", fontSize: 10 }}>{diagrams.filter(d => !(d.tags ?? []).includes("YouTube")).length}</span>
@@ -1136,6 +1145,7 @@ export default function DiagramsClient({ user, diagrams: initial }: { user: Shel
             <Tag size={10} strokeWidth={2.5} style={{ flexShrink: 0 }} />
             No Tag <span style={{ background: activeTag === "__no_tag__" ? "rgba(255,255,255,0.25)" : "#e4e6e8", borderRadius: 20, padding: "0 5px", fontSize: 10 }}>{diagrams.filter(d => (d.tags ?? []).length === 0).length}</span>
           </button>
+          </div>
         </div></div>
       )}
 
