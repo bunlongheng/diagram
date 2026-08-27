@@ -1063,7 +1063,7 @@ export default function DiagramsClient({ user, diagrams: initial }: { user: Shel
           {allTags.map(t => { const s = tagColorMap.get(t)!; const active = activeTag === t; const count = tagCounts.get(t) ?? 0; return (
             <button key={t} onClick={() => setActiveTag(active ? null : t)}
               draggable onDragStart={() => onTagDragStart(t)} onDragOver={e => onTagDragOver(e, t)} onDragEnd={() => { dragTag.current = null; }}
-              style={{ padding: "3px 10px 3px 7px", borderRadius: 20, fontSize: 11, fontWeight: 600, cursor: "grab", border: `1.5px solid ${s.border}`, background: active ? s.border : "#fff", color: s.text, flexShrink: 0, transition: "all 0.15s", opacity: active ? 1 : 0.65, display: "flex", alignItems: "center", gap: 4 }}>
+              style={{ padding: "3px 10px 3px 7px", borderRadius: 20, fontSize: 11, fontWeight: 600, cursor: "pointer", border: `1.5px solid ${s.border}`, background: active ? s.border : "#fff", color: s.text, flexShrink: 0, transition: "all 0.15s", opacity: active ? 1 : 0.65, display: "flex", alignItems: "center", gap: 4 }}>
               <TagIcon tag={t} size={10} />
               {t} <span style={{ background: active ? "rgba(255,255,255,0.25)" : `${s.text}22`, borderRadius: 20, padding: "0 5px", fontSize: 10 }}>{count}</span>
             </button>
