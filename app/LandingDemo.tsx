@@ -99,8 +99,14 @@ export default function LandingDemo({ diagrams }: { diagrams: Demo[] }) {
         @keyframes ldFlow { to { stroke-dashoffset: -240; } }
         @keyframes ldBlob { 0%,100% { transform: translate(0,0); } 50% { transform: translate(24px,-18px); } }
         .ld-in { opacity: 0; animation: ldUp 0.6s cubic-bezier(.16,.84,.44,1) both; }
-        .ld-card { opacity: 0; animation: ldUp 0.6s cubic-bezier(.16,.84,.44,1) both; transition: box-shadow .16s, transform .16s, border-color .16s; }
-        .ld-card:hover { transform: translateY(-3px); border-color: #cbd0dc; box-shadow: 0 12px 32px rgba(15,23,42,0.12); }
+        /* Fade-only entrance (no transform) so the hover translateY isn't blocked
+           by the animation's filled transform value. */
+        @keyframes ldFade { from { opacity: 0; } to { opacity: 1; } }
+        .ld-card { opacity: 0; animation: ldFade 0.5s ease both; transition: box-shadow .18s, transform .18s, border-color .18s; }
+        .ld-card img { transition: transform .22s cubic-bezier(.16,.84,.44,1); }
+        /* inline box-shadow/border on the card need !important to be overridden */
+        .ld-card:hover { transform: translateY(-4px); border-color: #c4c9d6 !important; box-shadow: 0 14px 34px rgba(15,23,42,0.14) !important; }
+        .ld-card:hover img { transform: scale(1.045); }
         .ld-life { animation: ldFlow 48s linear infinite; }
         .ld-blob { animation: ldBlob 18s ease-in-out infinite; }
         /* Rotating word before "Diagrams" — CSS-only, 6 words, ~2s each. */
