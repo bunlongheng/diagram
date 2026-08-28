@@ -48,9 +48,6 @@ export default function LandingDemo({ diagrams }: { diagrams: Demo[] }) {
             <span className="ld-flip">
               <span>Beautiful</span>
               <span>Clean</span>
-              <span>Clear</span>
-              <span>Readable</span>
-              <span>Easy</span>
               <span>Elegant</span>
             </span>{" "}Diagrams
           </h1>
@@ -108,19 +105,16 @@ export default function LandingDemo({ diagrams }: { diagrams: Demo[] }) {
         .ld-blob { animation: ldBlob 18s ease-in-out infinite; }
         /* Rotating word before "Diagrams" — CSS-only, 6 words, ~2s each. */
         .ld-flip { display: inline-grid; justify-items: end; vertical-align: bottom; color: #7c3aed; }
-        .ld-flip > span { grid-area: 1 / 1; opacity: 0; white-space: nowrap; animation: ldflip 12s infinite; }
+        .ld-flip > span { grid-area: 1 / 1; opacity: 0; white-space: nowrap; animation: ldflip 6s infinite; }
         .ld-flip > span:nth-child(1) { animation-delay: 0s; }
         .ld-flip > span:nth-child(2) { animation-delay: 2s; }
         .ld-flip > span:nth-child(3) { animation-delay: 4s; }
-        .ld-flip > span:nth-child(4) { animation-delay: 6s; }
-        .ld-flip > span:nth-child(5) { animation-delay: 8s; }
-        .ld-flip > span:nth-child(6) { animation-delay: 10s; }
         @keyframes ldflip {
-          0%    { opacity: 0; transform: translateY(14px); }
-          2.5%  { opacity: 1; transform: translateY(0); }
-          14%   { opacity: 1; transform: translateY(0); }
-          16.6% { opacity: 0; transform: translateY(-14px); }
-          100%  { opacity: 0; transform: translateY(-14px); }
+          0%   { opacity: 0; transform: translateY(14px); }
+          5%   { opacity: 1; transform: translateY(0); }
+          28%  { opacity: 1; transform: translateY(0); }
+          33%  { opacity: 0; transform: translateY(-14px); }
+          100% { opacity: 0; transform: translateY(-14px); }
         }
         @media (prefers-reduced-motion: reduce) {
           .ld-flip > span { animation: none; opacity: 0; }
