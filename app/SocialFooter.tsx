@@ -53,7 +53,7 @@ export default function SocialFooter() {
         ))}
       </div>
       <span style={{ fontSize: 12.5, color: "#94a3b8" }}>
-        Made with Diagrams · Built by <a href="https://bunlongheng.com" target="_blank" rel="noopener noreferrer" style={{ color: "#7c3aed", fontWeight: 600, textDecoration: "none" }}>Bunlong</a>
+        Built by <a href="https://bunlongheng.com" target="_blank" rel="noopener noreferrer" style={{ color: "#7c3aed", fontWeight: 600, textDecoration: "none" }}>Bunlong</a>
       </span>
     </footer>
   );

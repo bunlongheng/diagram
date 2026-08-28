@@ -80,10 +80,10 @@ export default function LandingDemo({ diagrams }: { diagrams: Demo[] }) {
                   <span style={{ fontSize: 13, fontWeight: 700, color: "#111827", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{d.title}</span>
                 </div>
                 <div style={{ flex: 1, minHeight: 0, background: "#fff", display: "flex", alignItems: "center", justifyContent: "center", padding: 16, overflow: "hidden" }}>
-                  {/* Public SVG render — fill the full height so every diagram is the
-                      same height across cards; width scales, any excess is clipped. */}
+                  {/* Public SVG render — object-fit:contain shows the whole diagram
+                      (nothing clipped), scaled to fit the card. */}
                   <img src={`/svg/${d.id}`} alt={d.title} loading="lazy"
-                    style={{ height: "100%", width: "auto", maxWidth: "none", objectFit: "contain" }} />
+                    style={{ maxWidth: "100%", maxHeight: "100%", objectFit: "contain" }} />
                 </div>
               </a>
             ))}
