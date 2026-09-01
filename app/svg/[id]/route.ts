@@ -24,9 +24,16 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
   const opts: Opts = { ...DEFAULT_OPTS, ...(settings?.opts ?? {}) };
   const layout: Layout = { ...DEFAULT_LAYOUT, ...(settings?.layout ?? {}) };
 
-  const diagram = parse(code);
-  if (!diagram.title && title) diagram.title = title;
-  const svg = buildSvg(diagram, opts, layout, created_at);
+  let svg: string;
+  try {
+    const diagram = parse(code);
+    if (!diagram.title && title) diagram.title = title;
+    svg = buildSvg(diagram, opts, layout, created_at);
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : String(err);
+    console.error("[svg] render failed:", msg);
+    return NextResponse.json({ error: "Render failed", detail: msg }, { status: 500 });
+  }
   const filename = `${toSlug(title || "diagram")}.svg`;
 
   return new Response(svg, {

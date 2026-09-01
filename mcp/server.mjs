@@ -22,9 +22,6 @@ import { z } from 'zod'
 
 const APP_URL = (process.env.DIAGRAMS_APP_URL || 'https://diagrams-bheng.vercel.app').replace(/\/$/, '')
 const SECRET = process.env.AI_API_SECRET
-const canvasFor = svg => svg.replace('/svg/', '/d/') // /svg/<id> -> /d/<id>
-const idFromSvg = svg => svg.split('/svg/')[1] ?? null
-
 const ok = obj => ({ content: [{ type: 'text', text: JSON.stringify(obj, null, 2) }] })
 const fail = msg => ({ isError: true, content: [{ type: 'text', text: msg }] })
 
@@ -54,7 +51,7 @@ server.registerTool(
   {
     title: 'Create diagram',
     description:
-      'Create a Mermaid SEQUENCE diagram in the Diagrams app. `code` MUST be valid Mermaid sequenceDiagram syntax (must contain "sequenceDiagram") — flowcharts, class, ER, etc. are rejected. Returns the SVG url (vector, sharp at any zoom) and the /d/ canvas (editable) url.',
+      'Create a Mermaid SEQUENCE diagram in the Diagrams app. `code` MUST be valid Mermaid sequenceDiagram syntax (must contain "sequenceDiagram") — flowcharts, class, ER, etc. are rejected. Returns { id, url, svg_url, canvas } plus `svg` (the inline script-free SVG markup, docs-safe) or `svg_error` if the inline render failed.',
     inputSchema: {
       title: z.string().describe('Descriptive title, e.g. "User Login Flow" (3-6 words)'),
       code: z.string().describe('Valid Mermaid sequenceDiagram code, e.g. "sequenceDiagram\\n  participant U as User\\n  U->>S: Login"'),
@@ -66,8 +63,8 @@ server.registerTool(
       if (!/sequenceDiagram/i.test(code)) {
         return fail('Only sequenceDiagram code is accepted — the code must contain "sequenceDiagram". This app is for sequence diagrams only; use the system-design MCP for architecture/node-edge diagrams.')
       }
-      const { svg } = await api('/api/ai/diagrams', { method: 'POST', body: { title, code, diagramType } })
-      return ok({ id: idFromSvg(svg), svg, canvas: canvasFor(svg) })
+      const { id, url, svg_url, svg, svg_error } = await api('/api/ai/diagrams?format=svg', { method: 'POST', body: { title, code, diagramType } })
+      return ok({ id, url, svg_url, canvas: url, ...(svg ? { svg } : {}), ...(svg_error ? { svg_error } : {}) })
     } catch (e) { return fail(`create failed: ${e.message}`) }
   },
 )

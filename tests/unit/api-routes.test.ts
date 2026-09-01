@@ -15,6 +15,15 @@ vi.mock("@/lib/auth-owner", () => ({
   authorizeOwner: vi.fn(),
   resolveOwnerId: vi.fn(),
   ownerId: vi.fn(),
+  // Mirrors the real bearerOk: compares the header against AI_API_SECRET /
+  // AI_API_SECRET_PARTNER at call time, so vi.stubEnv drives it per-test.
+  bearerOk: (reqOrHeader: Request | string | null) => {
+    const header = typeof reqOrHeader === "string"
+      ? reqOrHeader
+      : reqOrHeader?.headers.get("authorization") ?? "";
+    const secrets = [process.env.AI_API_SECRET, process.env.AI_API_SECRET_PARTNER].filter(Boolean);
+    return secrets.some(s => header === `Bearer ${s}`);
+  },
 }));
 
 vi.mock("@/lib/db", () => ({ default: { query: vi.fn() } }));
@@ -511,7 +520,7 @@ describe("POST /api/ai/diagrams", () => {
     vi.unstubAllEnvs();
   });
 
-  it("returns 201 with only the svg field on a successful insert", async () => {
+  it("returns 201 with id/url/svg_url on a successful insert", async () => {
     vi.stubEnv("AI_API_SECRET", SECRET);
     vi.resetModules();
     mockOwnerId.mockReturnValue("owner-uuid");
@@ -526,7 +535,52 @@ describe("POST /api/ai/diagrams", () => {
     const res = await POST(req);
     expect(res.status).toBe(201);
     const body = await res.json();
-    expect(body).toEqual({ svg: "https://diagrams-bheng.vercel.app/svg/d-api-1" });
+    expect(body).toEqual({
+      id: "d-api-1",
+      url: "https://diagrams-bheng.vercel.app/d/d-api-1",
+      svg_url: "https://diagrams-bheng.vercel.app/svg/d-api-1",
+    });
+    vi.unstubAllEnvs();
+  });
+
+  it("returns 201 with inline script-free svg when ?format=svg is requested", async () => {
+    vi.stubEnv("AI_API_SECRET", SECRET);
+    vi.resetModules();
+    mockOwnerId.mockReturnValue("owner-uuid");
+    q.mockResolvedValue({ rows: [{ id: "d-api-3" }], rowCount: 1 });
+
+    const { POST } = await import("@/app/api/ai/diagrams/route");
+    const req = new NextRequest("http://localhost:3002/api/ai/diagrams?format=svg", {
+      method: "POST",
+      headers: { "content-type": "application/json", authorization: `Bearer ${SECRET}` },
+      body: JSON.stringify({ title: "My Flow", code: "sequenceDiagram\nA->>B: hi", diagramType: "sequence" }),
+    });
+    const res = await POST(req);
+    expect(res.status).toBe(201);
+    const body = await res.json();
+    expect(body.id).toBe("d-api-3");
+    expect(body.svg).toContain("<svg");
+    // Docs-safe: the API-inline SVG must NOT carry the interactivity script
+    expect(body.svg).not.toContain("<script");
+    expect(body.svg_error).toBeUndefined();
+    vi.unstubAllEnvs();
+  });
+
+  it("accepts the revocable partner key AI_API_SECRET_PARTNER", async () => {
+    vi.stubEnv("AI_API_SECRET", SECRET);
+    vi.stubEnv("AI_API_SECRET_PARTNER", "partnerkey");
+    vi.resetModules();
+    mockOwnerId.mockReturnValue("owner-uuid");
+    q.mockResolvedValue({ rows: [{ id: "d-api-4" }], rowCount: 1 });
+
+    const { POST } = await import("@/app/api/ai/diagrams/route");
+    const req = new NextRequest("http://localhost:3002/api/ai/diagrams", {
+      method: "POST",
+      headers: { "content-type": "application/json", authorization: "Bearer partnerkey" },
+      body: JSON.stringify({ title: "My Flow", code: "sequenceDiagram\nA->>B: hi", diagramType: "sequence" }),
+    });
+    const res = await POST(req);
+    expect(res.status).toBe(201);
     vi.unstubAllEnvs();
   });
 

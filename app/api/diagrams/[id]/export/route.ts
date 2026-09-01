@@ -1,8 +1,6 @@
-import crypto from "crypto";
 import { NextRequest, NextResponse } from "next/server";
+import { bearerOk } from "@/lib/auth-owner";
 import db from "@/lib/db";
-
-const AI_SECRET = process.env.AI_API_SECRET;
 
 /**
  * GET /api/diagrams/[id]/export
@@ -13,7 +11,7 @@ const AI_SECRET = process.env.AI_API_SECRET;
  * callers that read the field keep working.
  *
  * Headers:
- *   Authorization: Bearer <AI_API_SECRET>
+ *   Authorization: Bearer <AI_API_SECRET or AI_API_SECRET_PARTNER>
  *
  * Response 200:
  *   { "id": "…", "title": "…", "code": "…", "diagramType": "…", "svg": null }
@@ -24,13 +22,10 @@ export async function GET(
 ) {
   try {
   // ── Auth ──────────────────────────────────────────────────────────────────
-  if (!AI_SECRET) {
+  if (!process.env.AI_API_SECRET && !process.env.AI_API_SECRET_PARTNER) {
     return NextResponse.json({ error: "AI_API_SECRET not configured" }, { status: 500 });
   }
-  const header = req.headers.get("authorization") ?? "";
-  const expected = `Bearer ${AI_SECRET}`;
-  const authorized = header.length === expected.length && crypto.timingSafeEqual(Buffer.from(header), Buffer.from(expected));
-  if (!authorized) {
+  if (!bearerOk(req)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 

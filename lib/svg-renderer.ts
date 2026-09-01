@@ -209,8 +209,10 @@ const THEMES: Record<string, { bg: string; titleFill: string; boxStroke: string;
     monokai: { bg: "#2C2B2F", titleFill: "#f8f8f2",  boxStroke: "none",    boxStrokeW: "0",   labelFill: "#2C2B2F", plainTextFill: "#f8f8f2" },
 };
 
-// This is the full buildSvg — identical to page.tsx but importable server-side
-function buildSvg(d: Diagram, o: Opts, l: Layout, createdAt?: string | Date): string {
+// This is the full buildSvg — identical to page.tsx but importable server-side.
+// `interactive: false` omits the inline hover <script> so the SVG is safe for
+// hosts that strip script-bearing markup (Confluence, GitHub, docs embeds).
+function buildSvg(d: Diagram, o: Opts, l: Layout, createdAt?: string | Date, { interactive = true }: { interactive?: boolean } = {}): string {
     const { participants: ps_raw, messages: ms } = d;
     if (!ps_raw.length) return "";
     const ps = ps_raw.map(p => o.labelOverrides?.[p.id] ? { ...p, label: o.labelOverrides[p.id] } : p);
@@ -434,5 +436,5 @@ function buildSvg(d: Diagram, o: Opts, l: Layout, createdAt?: string | Date): st
     // same participant again to clear. Only runs when SVG is opened as a
     // standalone document (e.g. /svg/<id>); harmless when embedded as <img>.
     const interactivity = `<style>[data-pid]{cursor:pointer}[data-pid],g[data-from]{transition:opacity .14s}</style><script><![CDATA[(function(){var es=document.querySelectorAll('[data-pid],g[data-from]');var pinned=null;function d(id){es.forEach(function(e){var k=e.getAttribute('data-pid')===id||e.getAttribute('data-from')===id||e.getAttribute('data-to')===id;e.style.opacity=k?'1':'0.18'})}function c(){es.forEach(function(e){e.style.opacity=''})}document.querySelectorAll('[data-pid]').forEach(function(b){var id=b.getAttribute('data-pid');b.addEventListener('mouseenter',function(){if(!pinned)d(id)});b.addEventListener('mouseleave',function(){if(!pinned)c()});b.addEventListener('click',function(ev){ev.stopPropagation();if(pinned===id){pinned=null;c()}else{pinned=id;d(id)}})});document.addEventListener('click',function(){if(pinned){pinned=null;c()}})})();]]></script>`;
-    return `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(diagramTitle)}"><title>${esc(diagramTitle)}</title>${parts.join("")}${interactivity}</svg>`;
+    return `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(diagramTitle)}"><title>${esc(diagramTitle)}</title>${parts.join("")}${interactive ? interactivity : ""}</svg>`;
 }

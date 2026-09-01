@@ -6,6 +6,26 @@ import { isLocal } from "@/lib/is-local";
 // secret for scripts/AI agents, then the NextAuth owner-email session.
 const OWNER_EMAIL = (process.env.OWNER_EMAIL ?? process.env.ALLOWED_EMAIL)?.trim().toLowerCase();
 
+// Bearer check shared by every API route: accepts the primary AI_API_SECRET or
+// the revocable partner key AI_API_SECRET_PARTNER. Constant-time compare per
+// secret, length-checked. Takes a Request or a raw Authorization header value.
+export function bearerOk(reqOrHeader: Request | string | null): boolean {
+  const header = typeof reqOrHeader === "string"
+    ? reqOrHeader
+    : reqOrHeader?.headers.get("authorization") ?? "";
+  if (!header.startsWith("Bearer ")) return false;
+  const secrets = [process.env.AI_API_SECRET, process.env.AI_API_SECRET_PARTNER].filter(Boolean) as string[];
+  for (const secret of secrets) {
+    const expected = `Bearer ${secret}`;
+    if (header.length === expected.length) {
+      try {
+        if (crypto.timingSafeEqual(Buffer.from(header), Buffer.from(expected))) return true;
+      } catch { /* length mismatch - ignore */ }
+    }
+  }
+  return false;
+}
+
 export async function authorizeOwner(req: Request, opts: { allowBearer?: boolean } = {}): Promise<boolean> {
   const { allowBearer = true } = opts;
 
@@ -15,20 +35,7 @@ export async function authorizeOwner(req: Request, opts: { allowBearer?: boolean
   // 2. Static API secret (external scripts / AI agents). Skipped when the caller
   //    MUST be the logged-in owner — e.g. the AI-generate route, which spends
   //    Anthropic credits and is admin-only, never a public/Bearer option.
-  if (allowBearer) {
-    const header = req.headers.get("authorization") ?? "";
-    if (header.startsWith("Bearer ")) {
-      const secrets = [process.env.AI_API_SECRET].filter(Boolean) as string[];
-      for (const secret of secrets) {
-        const expected = `Bearer ${secret}`;
-        if (header.length === expected.length) {
-          try {
-            if (crypto.timingSafeEqual(Buffer.from(header), Buffer.from(expected))) return true;
-          } catch { /* length mismatch — ignore */ }
-        }
-      }
-    }
-  }
+  if (allowBearer && bearerOk(req)) return true;
 
   // 3. NextAuth session cookie → only OWNER_EMAIL passes
   if (!OWNER_EMAIL) return false;

@@ -1,11 +1,10 @@
-import crypto from "crypto";
 import { NextRequest, NextResponse } from "next/server";
-import { ownerId } from "@/lib/auth-owner";
+import { bearerOk, ownerId } from "@/lib/auth-owner";
 import db from "@/lib/db";
 import { uniqueDiagramSlug } from "@/lib/slugs";
 import { embedTitleInCode } from "@/lib/diagram-code";
-
-const AI_SECRET = process.env.AI_API_SECRET;
+import { parse, buildSvg, DEFAULT_OPTS, DEFAULT_LAYOUT } from "@/lib/svg-renderer";
+import type { Opts, Layout } from "@/lib/svg-renderer";
 
 /**
  * POST /api/ai/diagrams
@@ -18,20 +17,27 @@ const AI_SECRET = process.env.AI_API_SECRET;
  *   - iconMode    = "icons"
  *
  * Headers:
- *   Authorization: Bearer <AI_API_SECRET>
+ *   Authorization: Bearer <AI_API_SECRET or AI_API_SECRET_PARTNER>
  *
  * Body (JSON):
  *   {
  *     "title":       "My Diagram",          // required
  *     "code":        "sequenceDiagram\n…",  // required
- *     "diagramType": "sequence"             // optional, defaults to "sequence"
+ *     "diagramType": "sequence",            // optional, defaults to "sequence"
+ *     "return":      "svg"                  // optional (or "format": "svg", or ?format=svg)
  *   }
  *
  * Response 201:
- *   { "svg": "https://diagrams-bheng.vercel.app/svg/…" }
+ *   {
+ *     "id":      "<uuid>",
+ *     "url":     "https://diagrams-bheng.vercel.app/d/<id>",    // canvas (editable)
+ *     "svg_url": "https://diagrams-bheng.vercel.app/svg/<id>"   // vector, sharp at any zoom
+ *   }
  *
- * The svg URL is the only field returned — vector, sharp at any zoom,
- * suitable for embedding in Confluence (Cloud), Notion, docs, etc.
+ * With ?format=svg (or body "return"/"format" = "svg") the response ALSO
+ * includes "svg": the inline self-contained SVG markup (script-free, safe for
+ * Confluence/GitHub/docs). If that render fails, the create still succeeds and
+ * "svg_error" carries the message instead of "svg".
  */
 export async function POST(req: NextRequest) {
   try {
@@ -45,18 +51,15 @@ export async function POST(req: NextRequest) {
 
 async function postHandler(req: NextRequest) {
   // ── Auth ──────────────────────────────────────────────────────────────────
-  if (!AI_SECRET) {
+  if (!process.env.AI_API_SECRET && !process.env.AI_API_SECRET_PARTNER) {
     return NextResponse.json({ error: "AI_API_SECRET not configured" }, { status: 500 });
   }
-  const header = req.headers.get("authorization") ?? "";
-  const expected = `Bearer ${AI_SECRET}`;
-  const authorized = header.length === expected.length && crypto.timingSafeEqual(Buffer.from(header), Buffer.from(expected));
-  if (!authorized) {
+  if (!bearerOk(req)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   // ── Body ──────────────────────────────────────────────────────────────────
-  let body: { title?: string; code?: string; diagramType?: string };
+  let body: { title?: string; code?: string; diagramType?: string; format?: string; return?: string };
   try {
     body = await req.json();
   } catch {
@@ -154,7 +157,7 @@ async function postHandler(req: NextRequest) {
   const settings = {
     opts: {
       boxOverlay: "gloss",
-      iconMode: "icons",
+      iconMode: "icons" as const,
     },
     layout: {
       vPad: 50,
@@ -170,8 +173,28 @@ async function postHandler(req: NextRequest) {
   const diagram = rows[0];
 
   const baseUrl = process.env.NEXT_PUBLIC_APP_URL ?? "https://diagrams-bheng.vercel.app";
-  return NextResponse.json(
-    { svg: `${baseUrl}/svg/${diagram.id}` },
-    { status: 201 },
-  );
+  const response: { id: string; url: string; svg_url: string; svg?: string; svg_error?: string } = {
+    id: diagram.id,
+    url: `${baseUrl}/d/${diagram.id}`,
+    svg_url: `${baseUrl}/svg/${diagram.id}`,
+  };
+
+  // ── Optional inline SVG (?format=svg, "return": "svg", or "format": "svg") ─
+  // Same renderer as /svg/<id>, but script-free (interactive: false) so the
+  // markup survives Confluence/GitHub. A render failure NEVER fails the create:
+  // the 201 still returns with svg_error instead of svg.
+  const wantsSvg = req.nextUrl.searchParams.get("format") === "svg" || body.return === "svg" || body.format === "svg";
+  if (wantsSvg) {
+    try {
+      const opts: Opts = { ...DEFAULT_OPTS, ...settings.opts };
+      const layout: Layout = { ...DEFAULT_LAYOUT, ...settings.layout };
+      const parsed = parse(finalCode);
+      if (!parsed.title) parsed.title = title.trim();
+      response.svg = buildSvg(parsed, opts, layout, diagram.created_at, { interactive: false });
+    } catch (renderErr: unknown) {
+      response.svg_error = renderErr instanceof Error ? renderErr.message : String(renderErr);
+    }
+  }
+
+  return NextResponse.json(response, { status: 201 });
 }
