@@ -33,11 +33,28 @@ export default async function Home({
   ]);
   // Match NextResponse.json: Date columns serialize to ISO strings for the client.
   const diagrams: Diagram[] = JSON.parse(JSON.stringify(result.rows));
+  // The local dev bypass has no session, so fall back to the owner row the
+  // NextAuth adapter already stores (name + Google profile photo).
+  let profile = {
+    email: session?.user?.email ?? undefined,
+    name: session?.user?.name ?? undefined,
+    image: session?.user?.image ?? undefined,
+  };
+  if (!profile.image) {
+    const ownerEmail = (process.env.OWNER_EMAIL ?? process.env.ALLOWED_EMAIL)?.trim().toLowerCase();
+    if (ownerEmail) {
+      const { rows } = await db.query(
+        "SELECT name, email, image FROM users WHERE lower(email) = $1 LIMIT 1",
+        [ownerEmail]
+      );
+      if (rows[0]) profile = { email: profile.email ?? rows[0].email, name: profile.name ?? rows[0].name, image: rows[0].image ?? undefined };
+    }
+  }
   const user: ShellUser = {
-    email: session?.user?.email ?? "owner",
+    email: profile.email ?? "owner",
     user_metadata: {
-      full_name: session?.user?.name ?? undefined,
-      avatar_url: session?.user?.image ?? undefined,
+      full_name: profile.name ?? undefined,
+      avatar_url: profile.image ?? undefined,
     },
   };
 
