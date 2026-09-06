@@ -851,7 +851,7 @@ function DiagramRow({ d, isShared, onOpen, onDelete, onRename, onTag, onViewCode
 }
 
 // ── Avatar cache ──────────────────────────────────────────────────────────────
-const LS_KEY = "diagrams_user_cache";
+const LS_KEY = "diagrams_user_cache"; // last known Google profile photo URL
 
 // ── Main ──────────────────────────────────────────────────────────────────────
 export default function DiagramsClient({ user, diagrams: initial }: { user: ShellUser; diagrams: Diagram[] }) {
@@ -863,7 +863,10 @@ export default function DiagramsClient({ user, diagrams: initial }: { user: Shel
   const [newCardId, setNewCardId] = useState<string | null>(null);
   const [showMenu, setShowMenu] = useState(false);
   const [search, setSearch] = useState("");
-  const [avatarSrc, setAvatarSrc] = useState<string | null>(null);
+  // Seeded from the session so the photo is in the server HTML (no post-hydration flash).
+  const [avatarSrc, setAvatarSrc] = useState<string | null>(
+    user.user_metadata?.avatar_url ?? user.user_metadata?.picture ?? null
+  );
   const [renamingDiagram, setRenamingDiagram] = useState<Diagram | null>(null);
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
   const [showDocs, setShowDocs] = useState(false);
@@ -888,9 +891,19 @@ export default function DiagramsClient({ user, diagrams: initial }: { user: Shel
   }, []);
   const name = user.user_metadata?.full_name ?? user.user_metadata?.name ?? user.email ?? "";
 
+  // Google photo from the session, cached so it paints instantly on the next
+  // load (and survives the client path where getSession() has no image).
   useEffect(() => {
     const liveUrl = user.user_metadata?.avatar_url ?? user.user_metadata?.picture;
-    if (liveUrl) setAvatarSrc(liveUrl);
+    if (liveUrl) {
+      setAvatarSrc(liveUrl);
+      try { localStorage.setItem(LS_KEY, liveUrl); } catch {}
+      return;
+    }
+    try {
+      const cached = localStorage.getItem(LS_KEY);
+      if (cached) setAvatarSrc(cached);
+    } catch {}
   }, [user]);
 
   useEffect(() => {
@@ -1100,7 +1113,7 @@ export default function DiagramsClient({ user, diagrams: initial }: { user: Shel
           <button onClick={() => setShowMenu(v => !v)} aria-label="Account menu"
             style={{ width: 34, height: 34, borderRadius: "50%", overflow: "hidden", border: showMenu ? "2px solid #1c1e21" : "2px solid #e4e6e8", cursor: "pointer", padding: 0, background: "#e4e6e8", transition: "border-color 0.15s", display: "flex", alignItems: "center", justifyContent: "center", position: "relative" }}>
             <span style={{ fontSize: 13, fontWeight: 700, color: "#1c1e21", userSelect: "none" }}>{name[0]?.toUpperCase()}</span>
-            {avatarSrc && <img src={avatarSrc} alt="" referrerPolicy="no-referrer" style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" }} onError={e => { (e.target as HTMLImageElement).style.display = "none"; }} />}
+            {avatarSrc && <img src={avatarSrc} alt="" referrerPolicy="no-referrer" style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" }} onError={() => { setAvatarSrc(null); try { localStorage.removeItem(LS_KEY); } catch {} }} />}
           </button>
           {showMenu && (
             <div style={{ position: "absolute", top: 42, right: 0, width: 210, background: "#ffffff", borderRadius: 12, boxShadow: "0 8px 32px rgba(0,0,0,0.12)", border: "1px solid #e4e6e8", overflow: "hidden", zIndex: 50 }}>
